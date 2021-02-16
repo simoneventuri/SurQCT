@@ -1,31 +1,38 @@
 import sys
-import os, errno
-import os.path
-from os import path
+import os
+import errno
 import shutil
-
-import tensorflow as tf
-import pandas     as pd
-import numpy      as np
 import h5py
+import tensorflow                             as tf
+import numpy                                  as np
+import pandas                                 as pd
+from os                                   import path
 
 
+#=======================================================================================================================================
 # Reading Levels Data 
-def read_levelsdata(DataFile, xVarsVec, Indx):
+def read_levelsdata(DataFile, xVarsVec, Suffix):
+    print('[SurQCT]:   Reading Molecular Levels Data from: ' + DataFile)
 
     # Extracting all the rot-vib levels
     xMat         = pd.read_csv(DataFile, header=0, skiprows=0)
+    xMat         = xMat.astype('float64')
     xMat         = xMat[xVarsVec]
-    xMat.columns = [(VarName + '_' + str(Indx)) for VarName in xMat.columns]
+    xMat.columns = [(VarName + Suffix) for VarName in xMat.columns]
     # xMat  = xMat.apply(pd.to_numeric, errors='coerce')
     # xMat  = np.array(xMat)                                                               
     # xMat  = tf.convert_to_tensor(xMat, dtype=tf.float64, name='xData')
 
     return xMat
 
+#=======================================================================================================================================
 
+
+
+#=======================================================================================================================================
 # Reading Dissociation Rates Data 
-def read_kdissdata(PathToHDF5File, TTra, TInt):
+def read_kdissdata(InputData, PathToHDF5File, TTra, TInt):
+    print('[SurQCT]:       Reading HDF5 File from: ' + PathToHDF5File + ' for Dissociation Rates at Temperature ' + str(int(TTra)) + 'K')
 
     HDF5Exist_Flg = path.exists(PathToHDF5File)
     if (HDF5Exist_Flg):
@@ -41,14 +48,18 @@ def read_kdissdata(PathToHDF5File, TTra, TInt):
 
     f.close()                                                          
     
-    KDiss = np.log10(np.expand_dims(KDiss[:,0]+1.e-18, axis=1))
-    #KDiss = tf.expand_dims(tf.convert_to_tensor(KDiss[:,0], dtype=tf.float64, name='yData'), axis=1)
+    KDiss = KDiss[:,0] * InputData.MultFact  
 
     return KDiss
 
+#=======================================================================================================================================
 
+
+
+#=======================================================================================================================================
 # Reading Excitation Rates Data 
-def read_kexcitdata(PathToHDF5File, TTra, TInt, NProcTypes):
+def read_kexcitdata(InputData, PathToHDF5File, TTra, TInt, NProcTypes):
+    print('[SurQCT]:       Reading HDF5 File from: ' + PathToHDF5File + ' for Excitation Rates at Temperature ' + str(int(TTra)) + 'K')
 
     HDF5Exist_Flg = path.exists(PathToHDF5File)
     if (HDF5Exist_Flg):
@@ -62,101 +73,54 @@ def read_kexcitdata(PathToHDF5File, TTra, TInt, NProcTypes):
     Data  = grp["Inel"]
     KInel = Data[...]
 
-    KExch = []
+    KOther = []
     for iProc in range(2, NProcTypes):
-        ExchStr  = "Exch_" + str(iProc-1)
-        Data     = grp[ExchStr]
-        KExch.append(Data[...])
+        ExchStr    = "Exch_" + str(iProc-1)
+        Data       = grp[ExchStr] 
+        KOtherTemp = Data[...]
+        KOther.append(KOtherTemp)
 
-    f.close()                                                          
+    f.close()   
+
+
+    # if (InputData.LossFunction == 'mean_squared_logarithmic_error'):
+    #     KExcit = KInel * InputData.MultFact
+    #     KExch  = 0.0
+    # else:
+    #     #KExcit = np.log10(KInel + KOther[0] + 1e-20)
+    #     KExcit = np.log(KInel + 1e-20)
+    #     KExch  = 0.0      
+    KExcit = KInel * InputData.MultFact  
+    KExch  = 0.0     
+
+    return KExcit, KExch
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
+# Reading Levels-to-Group Mapping
+def sample_initiallevels(PathToGrouping, NSamplesPerGroup, iSeed):
+    print('[SurQCT]:       Reading Grouping from File: ' + PathToGrouping + ' and Sampling ' + str(NSamplesPerGroup) + ' Levels per Group with Seed ' + str(iSeed))
+
+    xMat    = pd.read_csv(PathToGrouping, header=0, skiprows=0)
+    iIdxVec = xMat.groupby('Group', group_keys=False).apply(lambda df: df.sample(NSamplesPerGroup, random_state=iSeed))['#Idx'].values
   
-    return KInel, KExch
-
-
-# # Reading Training History 
-# def read_losseshistory(HistoryFile):
-
-#     # Extracting all the rot-vib levels
-#     TempData   = pd.read_csv(HistoryFile, header=None, skiprows=0)
-#     TempData   = TempData.apply(pd.to_numeric, errors='coerce')
-#     Iter       = np.expand_dims(np.array(TempData[0]),axis=1)                                                              
-#     Loss       = np.expand_dims(np.array(TempData[1]),axis=1)                                                              
-#     MSE0       = np.expand_dims(np.array(TempData[2]),axis=1)                                                              
-#     MSEf       = np.expand_dims(np.array(TempData[3]),axis=1)                                                              
-#     MSEr       = np.expand_dims(np.array(TempData[4]),axis=1)                                                              
-#     TimeTrain  = np.expand_dims(np.array(TempData[5]),axis=1)                                                              
-
-#     return Iter, Loss, MSE0, MSEf, MSEr, TimeTrain
+    return iIdxVec
+#=======================================================================================================================================
 
 
 
-# ### Reading Parameters from HDF5
-# def read_parameters_hdf5(model, InputData):
+#=======================================================================================================================================
+# Reading Sampled Levels
+def read_sampledinitiallevels(PathToSampledLevels, TTran):
 
-#     PathToFile    = InputData.PathToHDF5Fld + 'Params.hdf5'
-#     HDF5Exist_Flg = path.exists(PathToFile)
-#     if (HDF5Exist_Flg):
-#         f = h5py.File(PathToFile, 'a')
-#     else:
-#         f = {'key': 'value'}
+    PathToSampledLevels = PathToSampledLevels + str(int(TTran)) + 'K.csv'
+    print('[SurQCT]:       Reading Sampled Initial Levels List from File: ' + PathToSampledLevels)
 
+    iIdxVec             = pd.read_csv(PathToSampledLevels, header=0)
+    iIdxVec             = np.squeeze(iIdxVec.to_numpy())
+  
+    return iIdxVec
 
-#     CheckStr        = 'Finalb'
-#     Data            = f['Finalb']
-#     model.biasFinal = tf.Variable(Data[...], dtype=tf.float64, name='BiasFinal')
-
-
-#     NBranches = InputData.BranchLayers.shape[0]
-#     for iBranch in range(NBranches):
-#         #print('[ProPDE]:   Reading Parameters for Branch ' + str(iBranch))
-#         NetName  = 'Branch'  + str(iBranch+1)
-#         CheckStr = '/' + NetName + '/'
-#         grp      = f[CheckStr]
-
-#         #print('[ProPDE]:   Reading Activation Functions Scaling Parameters')
-#         ActScalingName                  = NetName + 'ActScaling'
-#         Data                            = grp["ActScaling"]
-#         model.ActScalingBranch[iBranch] = tf.Variable(Data[...], dtype=tf.float64, name=ActScalingName)
-
-#         NLayers = InputData.TrunkLayers.shape[0]
-#         for iLayer in range(NLayers-1):
-#             #print('[ProPDE]:   Saving Weights and Biases for Layer ' + str(iLayer+1))
-#             CheckStrTemp  = CheckStr + '/HL' + str(iLayer+1) + '/'
-
-#             WeightsName   = NetName + 'Weight' + str(iLayer+1)
-#             Data          = grp[CheckStrTemp+'W']
-#             model.weightsBranch[iBranch][iLayer] = tf.Variable(Data[...], dtype=tf.float64, name=WeightsName)
-
-#             BiasesName    = NetName + 'Biases' + str(iLayer+1)
-#             Data          = grp[CheckStrTemp+'b']
-#             model.biasesBranch[iBranch][iLayer]  = tf.Variable(Data[...], dtype=tf.float64, name=BiasesName)
-            
-     
-#     NetName  = 'Trunk'
-#     CheckStr = '/' + NetName + '/'
-#     grp      = f[CheckStr]
-#     #print('[ProPDE]:   Reading Parameters for Trunk')
-
-#     #print('[ProPDE]:   Reading Activation Functions Scaling Parameters')
-#     ActScalingName        = NetName + 'ActScaling'
-#     Data                  = grp["ActScaling"]
-#     model.ActScalingTrunk = tf.Variable(Data[...], dtype=tf.float64, name=ActScalingName)
-
-#     NLayers = InputData.TrunkLayers.shape[0]
-#     for iLayer in range(NLayers-1):
-#         #print('[ProPDE]:   Reading Weights and Biases for Layer ' + str(iLayer+1))
-#         CheckStrTemp               = CheckStr + '/HL' + str(iLayer+1) + '/'
-
-#         WeightsName                = NetName + 'Weight' + str(iLayer+1)
-#         Data                       = grp[CheckStrTemp+'W']
-#         model.weightsTrunk[iLayer] = tf.Variable(Data[...], dtype=tf.float64, name=WeightsName)
-
-#         BiasesName                 = NetName + 'Biases' + str(iLayer+1)
-#         Data                       = grp[CheckStrTemp+'b']
-#         model.biasesTrunk[iLayer]  = tf.Variable(Data[...], dtype=tf.float64, name=BiasesName)
-   
-
-#     f.close()    
-
-
-#     return model
+#=======================================================================================================================================

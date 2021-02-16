@@ -21,6 +21,37 @@ from sklearn.model_selection              import train_test_split
 
 
 #=======================================================================================================================================
+def NNBranch(InputData, normalized, NNName, Idx):
+
+    kW1      = InputData.WeightDecay[0]
+    kW2      = InputData.WeightDecay[1]
+    NNLayers = InputData.NNLayers[Idx]
+    NLayers  = len(NNLayers)
+    ActFun   = InputData.ActFun[Idx]
+
+    hiddenVec = [normalized]
+
+    for iLayer in range(NLayers):
+        LayerName = NNName + str(Idx) + '_HL' + str(iLayer+1) 
+        hiddenVec.append(layers.Dense(units=NNLayers[iLayer],
+                                activation=ActFun[iLayer],
+                                use_bias=True,
+                                kernel_initializer='glorot_normal',
+                                bias_initializer='zeros',
+                                kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
+                                bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
+                                name=LayerName)(hiddenVec[-1]))
+        if (iLayer < NLayers-1):
+            hiddenVec.append(layers.Dropout(InputData.DropOutRate, input_shape=(NNLayers[iLayer],))(hiddenVec[-1]))
+
+
+    return hiddenVec[-1]
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
 class model:    
 
     # Class Initialization
@@ -31,14 +62,16 @@ class model:
         self.yTrain       = TrainData[1]
         self.xValid       = ValidData[0]
         self.yValid       = ValidData[1]
-        
+
         VarsVec           = InputData.xVarsVec + ['TTran']
         ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec]
-        self.xTrainingVar = ChooseVarsI
+        ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec]
+        self.xTrainingVar = ChooseVarsI + ChooseVarsData
         self.yTrainingVar = InputData.RatesType
         print('[SurQCT]:   Variables Selected for Training:')
         print('[SurQCT]:     x = ', self.xTrainingVar)
         print('[SurQCT]:     y = ', self.yTrainingVar)
+        #-------------------------------------------------------------------------------------------------------------------------------
 
 
         if (InputData.DefineModelIntFlg > 0):
@@ -46,37 +79,43 @@ class model:
 
 
             #---------------------------------------------------------------------------------------------------------------------------
-            kW1 = InputData.WeightDecay[0]
-            kW2 = InputData.WeightDecay[1]
+            xDim               = len(InputData.xVarsVec)+1
+            input_             = tf.keras.Input(shape=[xDim*2,])
+            inputI, inputDelta = tf.split(input_, num_or_size_splits=[xDim, xDim], axis=1)
 
-            normalizer = preprocessing.Normalization()
-            normalizer.adapt(np.array(self.xTrain[self.xTrainingVar]))
-            LayersList = [normalizer]
+            ### Normalizer Layers
+            normalizerI        = preprocessing.Normalization()
+            self.xTrainI       = self.xTrain[ChooseVarsI]
+            normalizerI.adapt(np.array(self.xTrainI))
+            normalizedI        = normalizerI(inputI)
+            #
+            self.xTrainData    = self.xTrain[ChooseVarsData]
+            normalizerDelta    = preprocessing.Normalization()
+            normalizerDelta.adapt(np.array(self.xTrainData))
+            normalizedDelta    = normalizerDelta(inputDelta)
 
-            NLayers = len(InputData.NNLayers)
-            for iLayer in range(NLayers):
-                LayerName = 'HL' + str(iLayer+1)
-                LayersList.append( layers.Dense(units=InputData.NNLayers[iLayer],
-                                                activation=InputData.ActFun[iLayer],
-                                                use_bias=True,
-                                                kernel_initializer='glorot_normal',
-                                                bias_initializer='zeros',
-                                                kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                                bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                                name=LayerName) )
+            ### NN Branches
+            outputI         = NNBranch(InputData, normalizedI,     'Branch', 0)
+            #
+            outputDelta     = NNBranch(InputData, normalizedDelta, 'Branch', 1)
 
-                LayersList.append( layers.Dropout(InputData.DropOutRate, input_shape=(InputData.NNLayers[iLayer],)) )
+            ### Final Dot Product
+            output_1        = layers.Dot(axes=1)([outputI, outputDelta])
+           
+            ### Adding Noise
+            # output_2        = tf.math.exp(output_1)
+            # StDev           = 5e-14
+            # output_3        = tf.nn.relu(layers.GaussianNoise(stddev=StDev)(output_2))
+            # output_4        = tf.math.log(output_3)
 
-            LayersList.append(layers.Dense(units=1,
+            output_Final    = layers.Dense(units=1,
                                            activation='linear',
                                            use_bias=True,
                                            kernel_initializer='glorot_normal',
                                            bias_initializer='zeros',
-                                           kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                           bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                           name='OL'))
+                                           name='FinalScaling')(output_1)   
 
-            self.Model = keras.Sequential(LayersList)
+            self.Model      = keras.Model(inputs=[input_], outputs=[output_Final] )
             #---------------------------------------------------------------------------------------------------------------------------
 
 
@@ -211,5 +250,3 @@ class model:
         self.Model.load_weights(latest)
 
     #===================================================================================================================================
-
-

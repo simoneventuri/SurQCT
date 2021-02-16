@@ -1,7 +1,7 @@
 import os
 import sys
-import tensorflow as tf
-import numpy      as np
+import tensorflow                             as tf
+import numpy                                  as np
 
 
 if __name__ == "__main__": 
@@ -15,7 +15,8 @@ if __name__ == "__main__":
     print(" Eager execution: {}".format(tf.executing_eagerly()))
 
 
-    ##==============================================================================================================
+
+    #===================================================================================================================================
     print("\n[SurQCT]: Loading Modules and Functions ...")
 
     sys.path.insert(0, SurQCTFldr  + '/src/Reading/')
@@ -34,19 +35,34 @@ if __name__ == "__main__":
         InputFile = SurQCTFldr + '/src/InputData/'
         print("[SurQCT]:   Calling SurQCT with the PRESET Input File Located in " + InputFile )
         sys.path.insert(0, InputFile)
-    ##--------------------------------------------------------------------------------------------------------------
+
+    #===================================================================================================================================
 
 
-    ##==============================================================================================================
+
+    #===================================================================================================================================
     print("\n[SurQCT]: Keep Loading Modules and Functions...")
     from SurQCT_Input import inputdata
 
     print("\n[SurQCT]: Initializing Input ...")
     InputData    = inputdata(WORKSPACE_PATH, SurQCTFldr)
-    ##--------------------------------------------------------------------------------------------------------------
+
+    PathToFldr = InputData.PathToRunFld
+    try:
+        os.makedirs(PathToFldr)
+    except OSError as e:
+        pass
+        
+    PathToFldr = InputData.PathToFigFld
+    try:
+        os.makedirs(PathToFldr)
+    except OSError as e:
+        pass
+
+    #===================================================================================================================================
 
 
-    ##==============================================================================================================
+    #===================================================================================================================================
     print("\n[SurQCT]: Loading Final Modules ... ")
 
     sys.path.insert(0, SurQCTFldr  + '/src/Model/' + InputData.ApproxModel + '/')
@@ -55,92 +71,89 @@ if __name__ == "__main__":
     #     from Model import FNN
 
     sys.path.insert(0, SurQCTFldr  + '/src/RatesType/' + InputData.RatesType + '/')
-    from RatesType import generate_data
-    # Generating Data
-    InputData, TrainData, TestData, AllData, ExtraData = generate_data(InputData)
-    ##--------------------------------------------------------------------------------------------------------------
+    from RatesType import generate_data, plot_prediction
+
+    #===================================================================================================================================
 
 
-    PathToFldr = InputData.PathToRunFld
-    try:
-        os.makedirs(PathToFldr)
-    except OSError as e:
-        pass
+
+    #===================================================================================================================================
+    print("\n[SurQCT]: Generating Data ... ")
+
+    InputData, TrainData, ValidData, AllData, TestData, ExtraData = generate_data(InputData)
+
+    #===================================================================================================================================
 
 
-    ### Initializing the Surrogate Model
-    NN = model(InputData, TrainData)
 
-    ### Training the Surrogate Model
-    if (InputData.TrainIntFlg >= 1):
+    #===================================================================================================================================
+    print('\n[SurQCT]: Initializing ML Model ... ')
+
+    NN = model(InputData, TrainData, ValidData)
+
+    #===================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    if (InputData.TrainIntFlg > 0):
+
+
+        if (InputData.TrainIntFlg == 1):
+            print('\n[SurQCT]: Reading the ML Model Parameters ... ')
+
+            NN.load_params(InputData)
+
+
+        print('\n[SurQCT]: Training the ML Model ... ')
+
         History = NN.train(InputData)
 
-    ### Plotting the Losses History
-    plot_losseshistory(InputData, History)
+
+        print('\n[SurQCT]: Plotting the Losses Evolution ... ')
+
+        plot_losseshistory(InputData, History)
+
+    
+    else:
+
+        print('\n[SurQCT]: Reading the ML Model Parameters ... ')
+
+        NN.load_params(InputData)
+
+    #===================================================================================================================================
 
 
-    # ### Saving the Surrogate Model Parameters
-    # if (InputData.WriteParamsIntFlg >= 1):
-    #     save_parameters(NN, InputData)
+
+    # #===================================================================================================================================
+
+    # if (InputData.PlotIntFlg >= 1):
+
+    #     print('\n[SurQCT]: Evaluating the ML Model at the Training Data and Plotting the Results ... ')
+
+    #     xAll      = AllData[0]
+    #     yAll      = AllData[1]
+    #     yPred     = NN.Model.predict(xAll[NN.xTrainingVar])
+    
+    #     plot_prediction(InputData, 'Train', InputData.TTranVecTrain, xAll, yAll, yPred)
+
+    # #===================================================================================================================================
 
 
-    ### Generating Test Results
+
+    #===================================================================================================================================
+
     if (InputData.TestIntFlg >= 1):
-        xAll   = AllData[0]
-        yAll   = AllData[1]
-        xExtra = ExtraData
 
+        if (InputData.PlotIntFlg >= 1):
+    
+            print('\n[SurQCT]: Evaluating the ML Model at the Test Data and Plotting the Results ... ')
 
-        for TTran in InputData.TTranVecTest:
-            MaskVec = (xAll['TTran'] == TTran)
-            xPred   = xAll.loc[MaskVec]
-            yPred   = NN.Model.predict(xPred)
-            yData   = yAll.loc[MaskVec]
+            xTest     = TestData[0]
+            yTest     = TestData[1]
+            xExtra    = ExtraData
+            yPred     = NN.Model.predict(xTest[NN.xTrainingVar])
 
-            ### Plotting Test Results
-            if (InputData.PlotIntFlg >= 1):
+            plot_prediction(InputData, 'Test', InputData.TTranVecTest, xTest, yTest, yPred)
 
-                PathToFldr = InputData.PathToFigFld
-                try:
-                    os.makedirs(PathToFldr)
-                except OSError as e:
-                    pass
-                NN.plot_prediction(InputData, yData, yPred, TTran)
-
-
-        for TTran in InputData.TTranVecExtra:
-            MaskVec = (xExtra['TTran'] == TTran)
-            xPred   = xExtra.loc[MaskVec]
-            yPred   = NN.Model.predict(xPred)
-            yData   = []
-
-            ### Plotting Test Results
-            if (InputData.PlotIntFlg >= 1):
-
-                PathToFldr = InputData.PathToFigFld
-                try:
-                    os.makedirs(PathToFldr)
-                except OSError as e:
-                    pass
-                NN.plot_prediction(InputData, yData, yPred, TTran)
-
-
-    #         ### Saving Test Data
-    #         if (InputData.WriteDataIntFlg >= 1):
-
-    #             PathToFldr = InputData.PathToDataFld
-    #             try:
-    #                 os.makedirs(PathToFldr)
-    #             except OSError as e:
-    #                 pass
-    #             PredData       = tf.concat([tf.expand_dims(tTest,axis=1), xPred], axis=1)
-    #             PathToPredData = PathToFldr + '/TestCase' + str(iTestCase+1) + '.csv.Final'
-    #             save_data(PathToPredData, PredData)
-
-    #         ### Producing the Video of the Treaning History
-    #         if ((InputData.WriteDataIntFlg == 2) and (InputData.PlotIntFlg >= 1)):
-                
-    #             DataFile     = InputData.PathToDataFld + '/TestCase'  + str(iTestCase+1) + '.csv.Data'
-    #             tData, xData = read_data(DataFile, InputData.xDim)
-    #             PredFile     = InputData.PathToDataFld + '/TestCase' + str(iTestCase+1) + '.csv.'
-    #             video_history(InputData, iTestCase, tData, xData, PredFile, 1e10)
+    #===================================================================================================================================

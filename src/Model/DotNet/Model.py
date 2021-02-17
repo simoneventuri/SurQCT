@@ -55,14 +55,9 @@ def NNBranch(InputData, normalized, NNName, Idx):
 class model:    
 
     # Class Initialization
-    def __init__(self, InputData, TrainData, ValidData):
+    def __init__(self, InputData, PathToRunFld, TrainData, ValidData):
 
         #-------------------------------------------------------------------------------------------------------------------------------        
-        self.xTrain       = TrainData[0]
-        self.yTrain       = TrainData[1]
-        self.xValid       = ValidData[0]
-        self.yValid       = ValidData[1]
-
         VarsVec           = InputData.xVarsVec + ['TTran']
         ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec]
         ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec]
@@ -73,6 +68,14 @@ class model:
         print('[SurQCT]:     y = ', self.yTrainingVar)
         #-------------------------------------------------------------------------------------------------------------------------------
 
+
+        #-------------------------------------------------------------------------------------------------------------------------------  
+        if (InputData.TrainIntFlg >= 1):
+            self.xTrain       = TrainData[0]
+            self.yTrain       = TrainData[1]
+            self.xValid       = ValidData[0]
+            self.yValid       = ValidData[1]
+        #-------------------------------------------------------------------------------------------------------------------------------  
 
         if (InputData.DefineModelIntFlg > 0):
             print('[SurQCT]:   Defining ML Model from Scratch')
@@ -120,7 +123,7 @@ class model:
 
 
             #---------------------------------------------------------------------------------------------------------------------------
-            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=50000, decay_rate=0.97, staircase=True)
+            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=50000, decay_rate=0.98, staircase=True)
 
             MTD = InputData.Optimizer
             if (MTD == 'adadelta'):  # A SGD method based on adaptive learning rate
@@ -186,24 +189,23 @@ class model:
             print('[SurQCT]:   Compiling ML Model with Loss and Optimizer')
             self.Model.compile(loss=lss, optimizer=opt)
 
-            ModelFile = InputData.PathToRunFld + '/MyModel'
+            ModelFile = PathToRunFld + '/MyModel'
             print('[SurQCT]:   Saving ML Model in File: ' + ModelFile)
             self.Model.save(ModelFile)
             #---------------------------------------------------------------------------------------------------------------------------
 
+            #-------------------------------------------------------------------------------------------------------------------------------
+            print('[SurQCT]:   Summarizing ML Model Structure:')
+            self.Model.summary()
+            #-------------------------------------------------------------------------------------------------------------------------------
+
         else:
             
             #---------------------------------------------------------------------------------------------------------------------------
-            ModelFile      = InputData.PathToRunFld + '/MyModel'
+            ModelFile      = PathToRunFld + '/MyModel'
             print('[SurQCT]:   Loading ML Model from Folder: ' + ModelFile)
             self.Model     = keras.models.load_model(ModelFile)
             #---------------------------------------------------------------------------------------------------------------------------
-
-
-        #-------------------------------------------------------------------------------------------------------------------------------
-        print('[SurQCT]:   Summarizing ML Model Structure:')
-        self.Model.summary()
-        #-------------------------------------------------------------------------------------------------------------------------------
 
     #===================================================================================================================================
 
@@ -239,9 +241,9 @@ class model:
 
 
     #===================================================================================================================================
-    def load_params(self, InputData):
+    def load_params(self, PathToParamsFld):
 
-        MCFile         = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
+        MCFile         = PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         checkpoint_dir = os.path.dirname(MCFile)
         latest         = train.latest_checkpoint(checkpoint_dir)
 

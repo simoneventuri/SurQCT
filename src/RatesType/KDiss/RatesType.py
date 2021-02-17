@@ -12,24 +12,23 @@ from sklearn.utils                        import shuffle
 from sklearn.model_selection              import train_test_split
 
 
-from Reading  import read_levelsdata, read_kdissdata, sample_initiallevels, read_sampledinitiallevels
-
-
 #=======================================================================================================================================
-def generate_data(InputData):
+def generate_trainingdata(InputData):
 
-    xVarsVec         = InputData.xVarsVec
+    from Reading  import read_levelsdata, sample_initiallevels, read_sampledinitiallevels
 
-    InputData.MultFact = 1.e+01
-    MinValueTrain      = 1.e-16 * InputData.MultFact
-    MinValueTest       = 1.e-16 * InputData.MultFact
+    xVarsVec           = InputData.xVarsVec
+
+    InputData.MultFact = 1.e+07
+    MinValueTrain      = 1.e-18 * InputData.MultFact
+    MinValueTest       = 1.e-18 * InputData.MultFact
     NoiseSD            = 1.e-13 * InputData.MultFact
 
 
     #===================================================================================================================================
     ### Reading Levels Info of Initial and Final Molecules
-    LevelsData       = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
-    NLevels          = LevelsData.shape[0]
+    LevelsData         = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
+    NLevels            = LevelsData.shape[0]
 
 
     #===================================================================================================================================
@@ -204,6 +203,33 @@ def generate_data(InputData):
 
 
 #=======================================================================================================================================
+# Reading Dissociation Rates Data 
+def read_kdissdata(InputData, PathToHDF5File, TTra, TInt):
+    print('[SurQCT]:       Reading HDF5 File from: ' + PathToHDF5File + ' for Dissociation Rates at Temperature ' + str(int(TTra)) + 'K')
+
+    HDF5Exist_Flg = path.exists(PathToHDF5File)
+    if (HDF5Exist_Flg):
+        f = h5py.File(PathToHDF5File, 'a')
+    else:
+        f = {'key': 'value'}
+
+    TStr = 'T_' + str(int(TTra)) + '_' + str(int(TInt)) + '/Rates/'
+    grp  = f[TStr]
+
+    Data  = grp["Diss"]
+    KDiss = Data[...]
+
+    f.close()                                                          
+    
+    KDiss = KDiss[:,0] * InputData.MultFact  
+
+    return KDiss
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
 def plot_prediction(InputData, CaseType, TTranVec, xPred, yData, yPred):
 
     TrainingVar = InputData.RatesType
@@ -216,7 +242,7 @@ def plot_prediction(InputData, CaseType, TTranVec, xPred, yData, yPred):
         fig = plt.figure()
         plt.xlabel('Level Index')
         plt.ylabel('$K_i^D$ [$cm^3$/s]')
-        plt.ylim([1.e-15, 5.e-8])
+        plt.ylim([1.e-17, 5.e-8])
         # plt.xlim([min(time), max(time)])
         if (len(yData)==NLevels):
             plt.scatter(xPred['Idx_i'][kIdx], np.exp(yData[TrainingVar][kIdx])/InputData.MultFact, c='k', marker='+', linewidths =0.5, label='Data')
@@ -229,5 +255,160 @@ def plot_prediction(InputData, CaseType, TTranVec, xPred, yData, yPred):
         fig.savefig(FigPath, dpi=600)
         plt.show()
         #plt.close()
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
+def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
+
+
+    #===================================================================================================================================
+    print("\n[SurQCT]: Loading Input Module ...")
+    
+    InputFile = SurQCTFldr + '/src/InputData/'
+    print("[SurQCT]:   Calling SurQCT with the PRESET Input File Located in " + InputFile )
+    sys.path.insert(0, InputFile)
+    from SurQCT_Input import inputdata
+
+    sys.path.insert(0, SurQCTFldr  + '/src/Reading/')
+    from Reading import read_levelsdata
+
+    #====================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print("\n[SurQCT]: Initializing Input ...")
+    WORKSPACE_PATH             = os.getenv('WORKSPACE_PATH')  
+
+    InputData                  = inputdata(WORKSPACE_PATH, SurQCTFldr)
+
+    InputData.PathToLevelsFile = PathToLevelsFile
+    InputData.RatesType        = 'KDiss'
+    InputData.xVarsVec         = ['EVib','ERot','VMax','ro','rMax']
+    InputData.ApproxModel      = 'FNN'
+
+    OtherVar                   = InputData.OtherVar
+    xVarsVec                   = InputData.xVarsVec
+
+    InputData.MultFact         = 1.e+07
+    MinValue                   = 1.e-18
+    InputData.DissCorrFactor   = 16.0/3.0
+    #===================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print("\n[SurQCT]: Loading Final Modules ... ")
+
+    sys.path.insert(0, SurQCTFldr  + '/src/Model/' + InputData.ApproxModel + '/')
+    from Model import model
+
+    #===================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print('\n[SurQCT]: Initializing ML Model for KInel and Loading its Parameters ... ')
+
+    PathToRunFld              = SurQCTFldr + '/../' + InputData.RatesType + '/Test' + str(InputData.NNRunIdx)
+    InputData.PathToDataFld   = PathToRunFld + '/Data/'                                                               
+    InputData.PathToParamsFld = PathToRunFld + '/Params/'                                                            
+
+    NN_KDiss     = model(InputData, PathToRunFld, None, None)
+    NN_KDiss.load_params(InputData.PathToParamsFld)
+
+    #===================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print('\n[SurQCT]: Generating Rate Matrix at Translational Temperature: T = ' + str(int(TTran)) + 'K')
+
+
+    #===================================================================================================================================
+    ### Reading Levels Info of Initial and Final Molecules
+    LevelsData                = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
+    NLevels                   = LevelsData.shape[0]
+
+
+    #===================================================================================================================================
+    ### Initializing Rates Matrix
+    KDissVec = None #np.zeros((NLevels))
+
+
+    #===================================================================================================================================
+    ### Opening Files for Writing Rates 
+    KineticFldr_Temp = KineticFldr + '/T' + str(int(TTran)) + 'K/'
+    PathToFldr = InputData.PathToFigFld
+    try:
+        os.makedirs(KineticFldr_Temp)
+    except OSError as e:
+        pass
+    FileName     = '/Diss.dat'
+    if (InputData.DissCorrFactor != 0.0):
+        FileName = '/Diss_Corrected.dat' 
+    KineticFile_KDiss = KineticFldr_Temp + FileName
+    csvkinetics_KDiss = write_predictiondata(KineticFile_KDiss, None, -1, None, None)
+
+
+    print('[SurQCT]:     Generating Dissociation Rate Vector')
+
+    iIdxVec                  = np.arange(NLevels)
+
+    TTranVec                 = np.ones((NLevels))*TTran
+    TTranDataTemp            = pd.DataFrame({'TTran': TTranVec})
+    TTranDataTemp.index      = iIdxVec
+
+    iLevelsDataTemp          = LevelsData.copy()
+    iLevelsDataTemp.index    = iIdxVec
+
+    xTemp                    = pd.concat([iLevelsDataTemp, TTranDataTemp], axis=1)
+    xTemp.columns            = [(VarName + '_i') for VarName in xTemp.columns]
+
+    KDiss                    = np.exp( NN_KDiss.Model.predict(xTemp[NN_KDiss.xTrainingVar]) ) / InputData.MultFact * InputData.DissCorrFactor
+    iIdxVec                  = [i for i in range(NLevels) if (KDiss[i,0] > MinValue)]
+    #KDissVec[iIdxVec]  = KDiss[iIdxVec,0] 
+
+    csvkinetics_KDiss        = write_predictiondata(KineticFile_KDiss, csvkinetics_KDiss, 0, iIdxVec, KDiss[iIdxVec,0])
+
+
+    #===================================================================================================================================
+    ### Closing Files for Rates
+    csvkinetics_KDiss = write_predictiondata(KineticFile_KDiss, csvkinetics_KDiss, -2, None, None)
+
+
+    return KDissVec
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
+def write_predictiondata(KineticFile, csvkinetics, iFlg, iLevelVec, KVec):
+
+    Mol1_Name  = 'O2'
+    Atom1_Name = 'O'
+    Atom2_Name = 'O'
+    Atom3_Name = 'O'
+
+    if (iFlg == 0):
+        for iLevel in range(len(iLevelVec)): 
+            ProcName = Mol1_Name + '(' + str(iLevel+1) + ')+' + Atom1_Name + '=' + Atom1_Name + '+' + Atom2_Name + '+' + Atom3_Name
+            Line     = ProcName + ':%.4e,+0.0000E+00,+0.0000E+00,2\n' % KVec[iLevel]
+            csvkinetics.write(Line)
+
+    elif (iFlg == -1):
+        print('[SurQCT]:   Writing Kinetics in File: ' + KineticFile )
+        csvkinetics  = open(KineticFile, 'w')
+
+    elif (iFlg == -2):
+        print('[SurQCT]:   Closing Kinetics File: ' + KineticFile )
+        csvkinetics.close()
+
+
+    return csvkinetics
 
 #=======================================================================================================================================

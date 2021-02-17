@@ -71,7 +71,7 @@ if __name__ == "__main__":
     #     from Model import FNN
 
     sys.path.insert(0, SurQCTFldr  + '/src/RatesType/' + InputData.RatesType + '/')
-    from RatesType import generate_data, plot_prediction
+    from RatesType import generate_trainingdata, plot_prediction, generate_predictiondata
 
     #===================================================================================================================================
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     #===================================================================================================================================
     print("\n[SurQCT]: Generating Data ... ")
 
-    InputData, TrainData, ValidData, AllData, TestData, ExtraData = generate_data(InputData)
+    InputData, TrainData, ValidData, AllData, TestData, ExtraData = generate_trainingdata(InputData)
 
     #===================================================================================================================================
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     #===================================================================================================================================
     print('\n[SurQCT]: Initializing ML Model ... ')
 
-    NN = model(InputData, TrainData, ValidData)
+    NN = model(InputData, InputData.PathToRunFld, TrainData, ValidData)
 
     #===================================================================================================================================
 
@@ -114,12 +114,12 @@ if __name__ == "__main__":
 
         plot_losseshistory(InputData, History)
 
-    
+
     else:
 
         print('\n[SurQCT]: Reading the ML Model Parameters ... ')
 
-        NN.load_params(InputData)
+        NN.load_params(InputData.PathToParamsFld)
 
     #===================================================================================================================================
 
@@ -134,26 +134,57 @@ if __name__ == "__main__":
     #     xAll      = AllData[0]
     #     yAll      = AllData[1]
     #     yPred     = NN.Model.predict(xAll[NN.xTrainingVar])
-    
+
     #     plot_prediction(InputData, 'Train', InputData.TTranVecTrain, xAll, yAll, yPred)
 
     # #===================================================================================================================================
 
 
 
+    # #===================================================================================================================================
+
+    # if (InputData.TestIntFlg >= 1):
+
+    #     if (InputData.PlotIntFlg >= 1):
+
+    #         print('\n[SurQCT]: Evaluating the ML Model at the Test Data and Plotting the Results ... ')
+
+    #         xTest     = TestData[0]
+    #         yTest     = TestData[1]
+    #         yPred     = NN.Model.predict(xTest[NN.xTrainingVar])
+
+    #         plot_prediction(InputData, 'Test', InputData.TTranVecTest, xTest, yTest, yPred)
+
+    # #===================================================================================================================================
+
+
+
+    # #===================================================================================================================================
+
+    # if (InputData.TestIntFlg >= 1):
+
+    #     if (InputData.PlotIntFlg >= 1):
+
+    #         print('\n[SurQCT]: Evaluating the ML Model at the Test Data and Plotting the Results ... ')
+
+    #         xExtra    = ExtraData
+    #         yPred     = NN.Model.predict(xExtra[NN.xTrainingVar])
+    #         yData     = []
+
+    #         plot_prediction(InputData, 'Extra', InputData.TTranVecExtra, xExtra, yData, yPred)
+
+    # #===================================================================================================================================
+
+
     #===================================================================================================================================
 
-    if (InputData.TestIntFlg >= 1):
+    if (InputData.PredictIntFlg >= 1):
+   
+        print('\n[SurQCT]: Generating Rate Matrixes ... ')
 
-        if (InputData.PlotIntFlg >= 1):
-    
-            print('\n[SurQCT]: Evaluating the ML Model at the Test Data and Plotting the Results ... ')
-
-            xTest     = TestData[0]
-            yTest     = TestData[1]
-            xExtra    = ExtraData
-            yPred     = NN.Model.predict(xTest[NN.xTrainingVar])
-
-            plot_prediction(InputData, 'Test', InputData.TTranVecTest, xTest, yTest, yPred)
+        TTran = 10000.0
+        KExcitMat = generate_predictiondata(InputData, NN, TTran)
+        print(KExcitMat)
+        print(KExcitMat[9,:])
 
     #===================================================================================================================================

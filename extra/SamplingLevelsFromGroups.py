@@ -49,7 +49,7 @@ if __name__ == "__main__":
     #===================================================================================================================================
     print("\n[SurQCT]: Sampling Groups ...")
 
-    iSeed = 23
+    iSeed = 61
     iIdxVec = sample_initiallevels(InputData.PathToGrouping, 1, iSeed)
 
     print("\n[SurQCT]: iIdxVec = ", iIdxVec)

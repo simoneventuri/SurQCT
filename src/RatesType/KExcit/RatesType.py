@@ -10,13 +10,13 @@ import matplotlib.pyplot                      as plt
 import numpy.random                           as random
 from sklearn.utils                        import shuffle
 from sklearn.model_selection              import train_test_split
-
-
-from Reading  import read_levelsdata, read_kexcitdata, sample_initiallevels, read_sampledinitiallevels
+from tqdm                                 import tqdm
 
 
 #=======================================================================================================================================
-def generate_data(InputData):
+def generate_trainingdata(InputData):
+
+    from Reading  import read_levelsdata, sample_initiallevels, read_sampledinitiallevels
 
     OtherVar           = InputData.OtherVar
     xVarsVec           = InputData.xVarsVec
@@ -53,7 +53,13 @@ def generate_data(InputData):
         print('[SurQCT]:     Translational Temperature: T = ' + str(int(TTranVec[iT])) + 'K')
 
         ### Reading Rates at Temperature TTranVec[iT]
-        KExcitMat, KExchMat       = read_kexcitdata(InputData, InputData.PathToHAHDF5File, TTranVec[iT], TTranVec[iT], 3)
+        KInelMat, KExchMatList   = read_kexcitdata(InputData, InputData.PathToHAHDF5File, TTranVec[iT], TTranVec[iT], 3)
+        if (  InputData.ExcitType == 'KInel'):
+            KMatoI                    = KInelMat
+        elif (InputData.ExcitType == 'KExch'):
+            KMatoI                    = KExchMatList[0]
+        elif (InputData.ExcitType == 'KExcit'):
+            KMatoI                    = KInelMat + KExchMatList[0]
 
 
         ### Deciding Initial Levels LIst        
@@ -75,7 +81,7 @@ def generate_data(InputData):
         for iIdx in iIdxVec:
 
             ### Selecting only Final States with EXOTHERMIC KExit > MinValueTrain 
-            jIdxVec               = [jIdx for jIdx, x in enumerate(KExcitMat[iIdx,:] > MinValueTrain) if (x and jIdx<iIdx)]
+            jIdxVec               = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and jIdx<iIdx)]
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
             
@@ -87,7 +93,7 @@ def generate_data(InputData):
             TTran                 = np.ones((jNLevels)) * TTranVec[iT]
             TTranData             = TTranData.append(pd.DataFrame({'TTran': TTran}))
 
-            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KExcitMat[iIdx, jIdxVec]}))
+            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KMatoI[iIdx, jIdxVec]}))
             
             iLevelsDataTemp       = LevelsData.iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
@@ -175,8 +181,6 @@ def generate_data(InputData):
     TTranVec         = InputData.TTranVecTest
     NTTran           = len(InputData.TTranVecTest)
 
-    iIdxVec          = InputData.iLevelsVecTest
-
     iIdxData         = pd.DataFrame(columns = ['Idx_i'])
     jIdxData         = pd.DataFrame(columns = ['Idx_j'])
     iLevelsData      = pd.DataFrame(columns = xVarsVec)
@@ -184,10 +188,20 @@ def generate_data(InputData):
     TTranData        = pd.DataFrame(columns = ['TTran'])
     KExcitData       = pd.DataFrame(columns = ['KExcit'])
     for iT in range(NTTran):
-        KExcitMat, KExchMat       = read_kexcitdata(InputData, InputData.PathToHDF5File, TTranVec[iT], TTranVec[iT], 3)
 
+        ### Reading Rates at Temperature TTranVec[iT]
+        KInelMat, KExchMatList   = read_kexcitdata(InputData, InputData.PathToHDF5File, TTranVec[iT], TTranVec[iT], 3)
+        if (  InputData.ExcitType == 'KInel'):
+            KMatoI                    = KInelMat
+        elif (InputData.ExcitType == 'KExch'):
+            KMatoI                    = KExchMatList[0]
+        elif (InputData.ExcitType == 'KExcit'):
+            KMatoI                    = KInelMat + KExchMatList[0]
+
+
+        iIdxVec = InputData.iLevelsVecTest
         for iIdx in iIdxVec:
-            jIdxVec               = [jIdx for jIdx, x in enumerate(KExcitMat[iIdx,:] > MinValueTest) if (x and jIdx<iIdx)]
+            jIdxVec               = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTest) if (x and jIdx<iIdx)]
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
     
@@ -197,7 +211,7 @@ def generate_data(InputData):
             TTran                 = np.ones((jNLevels)) * TTranVec[iT]
             TTranData             = TTranData.append(pd.DataFrame({'TTran': TTran}))
 
-            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': np.log( KExcitMat[iIdx, jIdxVec] )}))
+            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': np.log( KMatoI[iIdx, jIdxVec] )}))
             
             iLevelsDataTemp       = LevelsData.iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
@@ -246,10 +260,10 @@ def generate_data(InputData):
     TTranData        = pd.DataFrame(columns = ['TTran'])
 
     for iT in range(NTTran):
-        
-        iIdxVec                   = [1000]#np.random.choice(NLevels, NPerTTranTrain, replace=False)
+
+        iIdxVec = InputData.iLevelsVecTest
         for iIdx in iIdxVec:
-            jIdxVec               = [jIdx for jIdx, x in enumerate(KExcitMat[iIdx,:] > MinValueTest) if (x and jIdx<iIdx)]
+            jIdxVec               = np.arange(NLevels)
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
     
@@ -300,6 +314,36 @@ def generate_data(InputData):
 #=======================================================================================================================================
 
 
+#=======================================================================================================================================
+# Reading Excitation Rates Data 
+def read_kexcitdata(InputData, PathToHDF5File, TTra, TInt, NProcTypes):
+    print('[SurQCT]:       Reading HDF5 File from: ' + PathToHDF5File + ' for Excitation Rates at Temperature ' + str(int(TTra)) + 'K')
+
+    HDF5Exist_Flg = path.exists(PathToHDF5File)
+    if (HDF5Exist_Flg):
+        f = h5py.File(PathToHDF5File, 'a')
+    else:
+        f = {'key': 'value'}
+
+    TStr = 'T_' + str(int(TTra)) + '_' + str(int(TInt)) + '/Rates/'
+    grp  = f[TStr]
+
+    Data  = grp["Inel"]
+    KInel = Data[...] * InputData.MultFact  
+
+    KOther = []
+    for iProc in range(2, NProcTypes):
+        ExchStr    = "Exch_" + str(iProc-1)
+        Data       = grp[ExchStr] 
+        KOtherTemp = Data[...]
+        KOther.append(KOtherTemp * InputData.MultFact)
+
+    f.close()   
+
+
+    return KInel, KOther
+#=======================================================================================================================================
+
 
 #=======================================================================================================================================
 def plot_prediction(InputData, CaseType, TTranVec, xPred, yData, yPred):
@@ -324,9 +368,229 @@ def plot_prediction(InputData, CaseType, TTranVec, xPred, yData, yPred):
             plt.legend()
             plt.grid()
             plt.title('Excitation Rates at T = ' + str(int(TTran)) + 'K')
-            FigPath = InputData.PathToFigFld + '/' + CaseType + 'Case_T' + str(int(TTran)) + 'K_Level' + str(iIdx) + '.png'
+            FigPath = InputData.PathToFigFld + '/' + CaseType + 'Case_T' + str(int(TTran)) + 'K_Level' + str(iIdx+1) + '.png'
             fig.savefig(FigPath, dpi=600)
             plt.show()
             #plt.close()
+
+#=======================================================================================================================================
+
+
+
+# #=======================================================================================================================================
+# def plot_prediction(InputData, CaseType, TTranVec, xPred, yData, yPred):
+
+#     import matplotlib.tri as tri
+#     import matplotlib.pyplot as plt
+
+#     TrainingVar = InputData.RatesType
+#     Idxs        = xPred.Idx_i.unique()
+    
+#     for TTran in (TTranVec):
+
+#         for iIdx in Idxs:
+#             kIdx1 = xPred.index[(xPred['Idx_i'] == iIdx)].tolist()
+#             kIdx2 = xPred.index[(xPred['TTran_i'] == TTran)].tolist()
+#             kIdx  = list(set(kIdx1) & set(kIdx2))
+
+#             if (len(yData)>0):
+#                 fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, figsize=(20,20))
+#                 ax1.tricontour( xPred['EVib_Delta'][kIdx], xPred['ERot_Delta'][kIdx], np.log10(np.exp(yData[TrainingVar][kIdx])/InputData.MultFact), 15, linewidths=0.5, colors='k')
+#                 ax1.tricontourf(xPred['EVib_Delta'][kIdx], xPred['ERot_Delta'][kIdx], np.log10(np.exp(yData[TrainingVar][kIdx])/InputData.MultFact), 15)
+#                 plt.xlabel('$\Delta \epsilon_v$')
+#                 plt.ylabel("$\Delta \epsilon_J$")
+#             else:
+#                 fig, (ax2) = plt.subplots(1)
+#                 plt.ylabel("$\Delta \epsilon_J$")
+#             ax2.tricontour(     xPred['EVib_Delta'][kIdx], xPred['ERot_Delta'][kIdx], np.log10(np.exp(np.squeeze(yPred[kIdx]))/InputData.MultFact),              15, linewidths=0.5, colors='k')
+#             ax2.tricontourf(    xPred['EVib_Delta'][kIdx], xPred['ERot_Delta'][kIdx], np.log10(np.exp(np.squeeze(yPred[kIdx]))/InputData.MultFact),              15)
+
+#             plt.xlabel('$\Delta \epsilon_v$')
+#             fig.suptitle('Excitation Rates at T = ' + str(int(TTran)) + 'K, i = ' + str(iIdx+1))
+#             FigPath = InputData.PathToFigFld + '/' + CaseType + 'Case_T' + str(int(TTran)) + 'K_Level' + str(iIdx+1) + '_CPlot.png'
+#             fig.savefig(FigPath, dpi=600)
+#             plt.show()
+#             #plt.close()
+
+# #=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
+def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
+
+
+    #===================================================================================================================================
+    print("\n[SurQCT]: Loading Input Module ...")
+    
+    InputFile = SurQCTFldr + '/src/InputData/'
+    print("[SurQCT]:   Calling SurQCT with the PRESET Input File Located in " + InputFile )
+    sys.path.insert(0, InputFile)
+    from SurQCT_Input import inputdata
+
+    sys.path.insert(0, SurQCTFldr  + '/src/Reading/')
+    from Reading import read_levelsdata
+
+    #====================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print("\n[SurQCT]: Initializing Input ...")
+    WORKSPACE_PATH             = os.getenv('WORKSPACE_PATH')  
+
+    InputData                  = inputdata(WORKSPACE_PATH, SurQCTFldr)
+
+    InputData.PathToLevelsFile = PathToLevelsFile
+    InputData.RatesType        = 'KExcit'
+    InputData.xVarsVec         = ['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro']
+    InputData.OtherVar         = '_Delta'
+    InputData.ApproxModel      = 'DotNet'
+
+    OtherVar                   = InputData.OtherVar
+    xVarsVec                   = InputData.xVarsVec
+
+    InputData.MultFact         = 1.e+09
+    MinValue                   = 1.e-16
+    #===================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print("\n[SurQCT]: Loading Final Modules ... ")
+
+    sys.path.insert(0, SurQCTFldr  + '/src/Model/' + InputData.ApproxModel + '/')
+    from Model import model
+
+    #===================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print('\n[SurQCT]: Initializing ML Model for KInel and Loading its Parameters ... ')
+
+    PathToRunFld              = SurQCTFldr + '/../' + InputData.RatesType + '/KInel_Test' + str(InputData.NNRunIdx)
+    InputData.PathToDataFld   = PathToRunFld + '/Data/'                                                               
+    InputData.PathToParamsFld = PathToRunFld + '/Params/'                                                            
+
+    NN_KInel     = model(InputData, PathToRunFld, None, None)
+    NN_KInel.load_params(InputData.PathToParamsFld)
+
+
+    print('\n[SurQCT]: Initializing ML Model for KExch and Loading its Parameters ... ')
+
+    PathToRunFld              = SurQCTFldr + '/../' + InputData.RatesType + '/KExch_Test' + str(InputData.NNRunIdx)
+    InputData.PathToDataFld   = PathToRunFld + '/Data/'                                                               
+    InputData.PathToParamsFld = PathToRunFld + '/Params/'   
+
+    NN_KExch     = model(InputData, PathToRunFld, None, None)
+    NN_KExch.load_params(InputData.PathToParamsFld)
+
+    #===================================================================================================================================
+
+
+
+    #===================================================================================================================================
+    print('\n[SurQCT]: Generating Rate Matrix at Translational Temperature: T = ' + str(int(TTran)) + 'K')
+
+
+    #===================================================================================================================================
+    ### Reading Levels Info of Initial and Final Molecules
+    LevelsData                = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
+    NLevels                   = LevelsData.shape[0]
+
+
+    #===================================================================================================================================
+    ### Initializing Rates Matrix
+    KInelMat = None #np.zeros((NLevels, NLevels))
+    KExchMat = None #np.zeros((NLevels, NLevels))
+
+
+    #===================================================================================================================================
+    ### Opening Files for Writing Rates
+    KineticFile_KInel = KineticFldr + '/T' + str(int(TTran)) + 'K/Inel.dat'
+    csvkinetics_KInel = write_predictiondata(KineticFile_KInel, None, -1, None, None, None)
+    KineticFile_KExch = KineticFldr + '/T' + str(int(TTran)) + 'K/Exch_Type1.dat'
+    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, None, -1, None, None, None)
+
+
+    ### Loop on Initial States
+    for iIdx in tqdm(range(1, NLevels), desc='[SurQCT]:     Generating Inelastic and Exchange Rate Matrixes'):
+        time.sleep(0.02)
+        jIdxVec               = np.arange(iIdx)
+        jNLevels              = len(jIdxVec)
+        kIdxVec               = [iIdx]*jNLevels
+        
+
+        TTranVec              = np.ones((jNLevels))*TTran
+        TTranDataTemp         = pd.DataFrame({'TTran': TTranVec})
+        TTranDataTemp.index   = jIdxVec
+
+        iLevelsDataTemp       = LevelsData.iloc[kIdxVec,:].copy()
+        iLevelsDataTemp.index = jIdxVec
+
+        jLevelsDataTemp       = LevelsData.iloc[jIdxVec,:].copy()        
+        if (OtherVar == '_Delta'):
+            jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
+        else:
+            jLevelsDataTemp   = jLevelsDataTemp
+        jLevelsDataTemp.index = jIdxVec
+
+        iLevelsData           = pd.concat([iLevelsDataTemp, TTranDataTemp], axis=1)
+        iLevelsData.columns   = [(VarName + '_i') for VarName in iLevelsData.columns]
+        jLevelsData           = pd.concat([jLevelsDataTemp, TTranDataTemp], axis=1)
+        jLevelsData.columns   = [(VarName + OtherVar) for VarName in jLevelsData.columns]
+        xTemp                 = pd.concat([iLevelsData, jLevelsData], axis=1)
+
+        KInel                    = np.exp( NN_KInel.Model.predict(xTemp[NN_KInel.xTrainingVar]) ) / InputData.MultFact
+        jIdxVec                  = [i for i in range(jNLevels) if (KInel[i,0] > MinValue)]
+        #KInelMat[iIdx, jIdxVec]  = KInel[jIdxVec,0] 
+
+        csvkinetics_KInel        = write_predictiondata(KineticFile_KInel, csvkinetics_KInel, 0, iIdx, jIdxVec, KInel[jIdxVec,0])
+
+
+        KExch                    = np.exp( NN_KExch.Model.predict(xTemp[NN_KExch.xTrainingVar]) ) / InputData.MultFact
+        jIdxVec                  = [i for i in range(jNLevels) if (KExch[i,0] > MinValue)]
+        #KExchMat[iIdx, jIdxVec]  = KExch[jIdxVec,0] 
+        
+        csvkinetics_KExch        = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, 0, iIdx, jIdxVec, KExch[jIdxVec,0])
+
+
+    #===================================================================================================================================
+    ### Closing Files for Rates
+    csvkinetics_KInel = write_predictiondata(KineticFile_KInel, csvkinetics_KInel, -2, None, None, None)
+    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, -2, None, None, None)
+
+
+    return KInelMat, KExchMat
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
+def write_predictiondata(KineticFile, csvkinetics, iFlg, iLevel, jLevelVec, KVec):
+
+    Mol1_Name  = 'O2'
+    Atom1_Name = 'O'
+    Mol2_Name  = 'O2'
+    Atom2_Name = 'O'
+
+    if (iFlg == 0):
+        for i in range(len(jLevelVec)): 
+            ProcName = Mol1_Name + '(' + str(iLevel+1) + ')+' + Atom1_Name + '=' + Mol2_Name + '(' + str(jLevelVec[i]+1) + ')+' + Atom2_Name
+            Line     = ProcName + ':%.4e,+0.0000E+00,+0.0000E+00,5\n' % KVec[i]
+            csvkinetics.write(Line)
+
+    elif (iFlg == -1):
+        print('[SurQCT]:   Writing Kinetics in File: ' + KineticFile )
+        csvkinetics  = open(KineticFile, 'w')
+
+    elif (iFlg == -2):
+        print('[SurQCT]:   Closing Kinetics File: ' + KineticFile )
+        csvkinetics.close()
+
+
+    return csvkinetics
 
 #=======================================================================================================================================

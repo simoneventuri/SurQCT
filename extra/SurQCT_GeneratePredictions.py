@@ -12,7 +12,7 @@ if __name__ == "__main__":
     TTranVec          = [6000.0, 10000.0, 12000.0]
 
     PathToLevelsFile  = ['/home/venturi/WORKSPACE/Air_Database/Run_0D/database/levels/O2.csv']
-    KineticFldr       = '/home/venturi/WORKSPACE/Air_Database/Run_0D/database_HighAccuracy/kinetics/O3_UMN/'
+    KineticFldr       = '/home/venturi/WORKSPACE/Air_Database/Run_0D_HighAccuracy/database/kinetics/O3_UMN/'
 
 
 

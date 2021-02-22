@@ -48,7 +48,7 @@ class inputdata(object):
         self.xVarsVec            = ['EVib','ERot','VMax','ro','rMax']#['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro']
         self.RandDataFlg         = True                                                                      # Randomize Training Data 
 
-        self.TTranVecTrain       = np.array([1500.0, 2500.0, 5000.0, 10000.0, 15000.0, 20000.0])#np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0])
+        self.TTranVecTrain       = np.array([1500.0, 2500.0, 5000.0, 10000.0, 15000.0, 20000.0, 30000.0, 50000.0])#np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0])
         self.iLevelsIntFlg       = 4
         self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/O2_Sampled_'
         #self.iLevelsSeedsVec     = [0, 4, 3, 1, 2]

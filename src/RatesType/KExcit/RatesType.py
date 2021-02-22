@@ -2,6 +2,7 @@ import time
 import os
 import shutil
 import sys
+import h5py
 import tensorflow                             as tf
 import numpy                                  as np
 import seaborn                                as sns
@@ -11,6 +12,7 @@ import numpy.random                           as random
 from sklearn.utils                        import shuffle
 from sklearn.model_selection              import train_test_split
 from tqdm                                 import tqdm
+from os                                   import path
 
 
 #=======================================================================================================================================
@@ -26,12 +28,15 @@ def generate_trainingdata(InputData):
     MinValueTest       = 1.e-16 * InputData.MultFact
     NoiseSD            = 1.e-13 * InputData.MultFact
 
+    InputData.iLevelsVecTest = list(np.array(InputData.iLevelsVecTest) - 1)
+
 
     #===================================================================================================================================
     ### Reading Levels Info of Initial and Final Molecules
-    LevelsData       = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
-    NLevels          = LevelsData.shape[0]
-
+    LevelsData         = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
+    NLevels            = LevelsData.shape[0]
+    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 5.11304329E+00 + 1e-10)
+    LevelsData['Rot']  = np.log10(LevelsData['ERot']                  + 1e-10)
 
     #===================================================================================================================================
     ### Loading Input and Output for Training and Validation
@@ -443,7 +448,7 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
 
     InputData.PathToLevelsFile = PathToLevelsFile
     InputData.RatesType        = 'KExcit'
-    InputData.xVarsVec         = ['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro']
+    InputData.xVarsVec         = ['EVib','ERot','ri','ro'] #['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro']
     InputData.OtherVar         = '_Delta'
     InputData.ApproxModel      = 'DotNet'
 
@@ -497,6 +502,7 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
     #===================================================================================================================================
     ### Reading Levels Info of Initial and Final Molecules
     LevelsData                = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
+    LevelsData                = LevelsData[InputData.xVarsVec]
     NLevels                   = LevelsData.shape[0]
 
 

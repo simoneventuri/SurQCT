@@ -33,7 +33,7 @@ def NNBranch(InputData, normalized, NNName, Idx):
     hiddenVec = [normalized]
 
     for iLayer in range(NLayers):
-        LayerName = NNName + str(Idx) + '_HL' + str(iLayer+1) 
+        LayerName = NNName + str(Idx) + '_HL' + str(iLayer+1) + 'NonLinear' 
         hiddenVec.append(layers.Dense(units=NNLayers[iLayer],
                                 activation=ActFun[iLayer],
                                 use_bias=True,
@@ -42,8 +42,21 @@ def NNBranch(InputData, normalized, NNName, Idx):
                                 kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
                                 bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
                                 name=LayerName)(hiddenVec[-1]))
-        if (iLayer < NLayers-1):
-            hiddenVec.append(layers.Dropout(InputData.DropOutRate, input_shape=(NNLayers[iLayer],))(hiddenVec[-1]))          
+
+        LayerName = NNName + str(Idx) + '_HL' + str(iLayer+1) + 'Linear'
+        hiddenVec.append(layers.Dense(units=NNLayers[iLayer],
+                                activation='linear',
+                                use_bias=True,
+                                kernel_initializer='glorot_normal',
+                                bias_initializer='zeros',
+                                kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
+                                bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
+                                name=LayerName)(hiddenVec[-1]))
+
+        hiddenVec.append(layers.Dropout(InputData.DropOutRate, input_shape=(NNLayers[iLayer],))(hiddenVec[-1]))          
+
+        if (iLayer > 0):
+            hiddenVec[-1] = hiddenVec[-1] + hiddenVec[-4]            
 
     return hiddenVec[-1]
 

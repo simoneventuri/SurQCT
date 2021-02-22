@@ -2,6 +2,7 @@ import time
 import os
 import shutil
 import sys
+import h5py
 import tensorflow                             as tf
 import numpy                                  as np
 import seaborn                                as sns
@@ -10,6 +11,7 @@ import matplotlib.pyplot                      as plt
 import numpy.random                           as random
 from sklearn.utils                        import shuffle
 from sklearn.model_selection              import train_test_split
+from os                                   import path
 
 
 #=======================================================================================================================================

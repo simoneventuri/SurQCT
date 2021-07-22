@@ -32,7 +32,6 @@ def generate_trainingdata(InputData):
     LevelsData         = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
     NLevels            = LevelsData.shape[0]
 
-
     #===================================================================================================================================
     ### Loading Input and Output for Training and Validation
     print('[SurQCT]:   Generating Training and Validation Data Points')
@@ -315,7 +314,7 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
     #===================================================================================================================================
     print('\n[SurQCT]: Initializing ML Model for KInel and Loading its Parameters ... ')
 
-    PathToRunFld              = SurQCTFldr + '/../' + InputData.RatesType + '/Test' + str(InputData.NNRunIdx)
+    PathToRunFld              = SurQCTFldr + '/../' + InputData.RatesType + '/KDiss_Test' + str(InputData.NNRunIdx)
     InputData.PathToDataFld   = PathToRunFld + '/Data/'                                                               
     InputData.PathToParamsFld = PathToRunFld + '/Params/'                                                            
 
@@ -343,7 +342,12 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
 
     #===================================================================================================================================
     ### Opening Files for Writing Rates 
-    KineticFldr_Temp = KineticFldr + '/T' + str(int(TTran)) + 'K/'
+    KineticFldr_Temp1 = KineticFldr + '/Test'+ str(InputData.NNRunIdx) 
+    try:
+        os.makedirs(KineticFldr_Temp1)
+    except OSError as e:
+        pass
+    KineticFldr_Temp = KineticFldr + '/Test'+ str(InputData.NNRunIdx) +'/T' + str(int(TTran)) + 'K/'
     PathToFldr = InputData.PathToFigFld
     try:
         os.makedirs(KineticFldr_Temp)

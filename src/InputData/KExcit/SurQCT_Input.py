@@ -11,22 +11,24 @@ class inputdata(object):
         #=======================================================================================================================================
         ### Case Name
         self.RatesType = 'KExcit'
+        self.ExcitType = 'KInel'
 
         #=======================================================================================================================================
         ### Execution Flags
         self.DefineModelIntFlg   = 1
-        self.TrainIntFlg         = 2                                                                      # Training                       0=>No, 1=>Yes
+        self.TrainIntFlg         = 1                                                                      # Training                       0=>No, 1=>Yes
         self.WriteParamsIntFlg   = 1                                                                      # Writing Parameters             0=>Never, 1=>After Training, 2=>Also During Training
-        self.WriteDataIntFlg     = 2                                                                      # Writing Data After Training    0=>Never, 1=>After Training, 2=>Also During Training
-        self.TestIntFlg          = 2                                                                      # Evaluating                     0=>No, 1=>Yes
-        self.PlotIntFlg          = 2                                                                      # Plotting Data                  0=>Never, 1=>After Training, 2=>Also During Training
+        self.WriteDataIntFlg     = 1                                                                      # Writing Data After Training    0=>Never, 1=>After Training, 2=>Also During Training
+        self.TestIntFlg          = 0                                                                      # Evaluating                     0=>No, 1=>Yes
+        self.PlotIntFlg          = 0                                                                      # Plotting Data                  0=>Never, 1=>After Training, 2=>Also During Training
+        self.PredictIntFlg       = 1
 
         #=======================================================================================================================================
         ### Paths
         self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
         self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
         self.NNRunIdx            = 1                                                                      # Training Case Identification Number 
-        self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/Test' + str(self.NNRunIdx) # Path To Training Folder
+        self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/TrialMaith_Test' + str(self.NNRunIdx) # Path To Training Folder
         self.TBCheckpointFldr    = self.PathToRunFld + '/TB/'
         self.PathToFigFld        = self.PathToRunFld + '/Figures/'                                        # Path To Training Figures Folder 
         self.PathToDataFld       = self.PathToRunFld + '/Data/'                                           # Path To Training Data Folder 
@@ -63,13 +65,13 @@ class inputdata(object):
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]
         #self.NiLevelsSampled    = 100
 
-        self.NEpoch              = 10000                                                                     # Number of Epoches
+        self.NEpoch              = 10                                                                        # Number of Epoches
         self.MiniBatchSize       = 64
         self.LossFunction        = 'mean_absolute_percentage_error'#'mean_squared_logarithmic_error'
         self.LearningRate        = 1.e-5                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
-        self.WeightDecay         = np.array([1.e-5, 1.e-5], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
+        self.WeightDecay         = np.array([1.e-4, 1.e-4], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
         self.ImpThold            = 1.e-4   
         self.NPatience           = 300 
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)

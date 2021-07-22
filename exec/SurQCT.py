@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import tensorflow                             as tf
 import numpy                                  as np
@@ -15,16 +16,12 @@ if __name__ == "__main__":
     print(" Eager execution: {}".format(tf.executing_eagerly()))
 
 
-
     #===================================================================================================================================
     print("\n[SurQCT]: Loading Modules and Functions ...")
 
     sys.path.insert(0, SurQCTFldr  + '/src/Reading/')
-    # from Reading import read_data, read_losseshistory
     sys.path.insert(0, SurQCTFldr  + '/src/Plotting/')
     from Plotting import plot_losseshistory
-    # sys.path.insert(0, SurQCTFldr  + '/src/Saving/')
-    # from Saving import save_parameters, save_data
 
 
     if (len(sys.argv) > 1):
@@ -52,12 +49,20 @@ if __name__ == "__main__":
         os.makedirs(PathToFldr)
     except OSError as e:
         pass
-        
+
+    InputFileOriginal = InputFile + '/SurQCT_Input.py'
+    InputFileTarget   = InputData.PathToRunFld + '/SurQCT_Input.py'
+    try:
+        shutil.copyfile(InputFileOriginal, InputFileTarget)
+    except OSError as e:
+        pass
+    
     PathToFldr = InputData.PathToFigFld
     try:
         os.makedirs(PathToFldr)
     except OSError as e:
         pass
+
 
     #===================================================================================================================================
 
@@ -67,8 +72,6 @@ if __name__ == "__main__":
 
     sys.path.insert(0, SurQCTFldr  + '/src/Model/' + InputData.ApproxModel + '/')
     from Model import model
-    # if (InputData.ApproxModel == 'FNN'):
-    #     from Model import FNN
 
     sys.path.insert(0, SurQCTFldr  + '/src/RatesType/' + InputData.RatesType + '/')
     from RatesType import generate_trainingdata, plot_prediction, generate_predictiondata
@@ -127,15 +130,15 @@ if __name__ == "__main__":
 
     #===================================================================================================================================
 
-    if (InputData.PlotIntFlg >= 1):
-
-        print('\n[SurQCT]: Evaluating the ML Model at the Training Data and Plotting the Results ... ')
-
-        xAll      = AllData[0]
-        yAll      = AllData[1]
-        yPred     = NN.Model.predict(xAll[NN.xTrainingVar])
-
-        plot_prediction(InputData, 'Train', InputData.TTranVecTrain, xAll, yAll, yPred)
+#    if (InputData.PlotIntFlg >= 1):
+#
+#        print('\n[SurQCT]: Evaluating the ML Model at the Training Data and Plotting the Results ... ')
+#        
+#        xAll      = AllData[0]
+#        yAll      = AllData[1]
+#        yPred     = NN.Model.predict(xAll[NN.xTrainingVar])
+#
+#        plot_prediction(InputData, 'Train', InputData.TTranVecTrain, xAll, yAll, yPred)
 
     #===================================================================================================================================
 
@@ -178,12 +181,12 @@ if __name__ == "__main__":
 
     #===================================================================================================================================
 
-    #if (InputData.PredictIntFlg >= 1):
+#    if (InputData.PredictIntFlg >= 1):
    
-     #   print('\n[SurQCT]: Generating Rate Matrixes ... ')
+#        print('\n[SurQCT]: Generating Rate Matrixes ... ')
 
-      #  TTran = 10000.0
-       # KExcitMat = generate_predictiondata(InputData, NN, TTran)
+#        TTran = 10000.0
+#        KExcitMat = generate_predictiondata(InputData, NN, TTran)
        # print(KExcitMat)
        # print(KExcitMat[9,:])
 

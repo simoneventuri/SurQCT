@@ -35,12 +35,9 @@ def generate_trainingdata(InputData):
     ### Reading Levels Info of Initial and Final Molecules
     LevelsData         = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
     NLevels            = LevelsData.shape[0]
-#    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 5.11304329E+00 + 1e-10)
-    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 1e-10)
-    LevelsData['Rot'] = np.log10(LevelsData['ERot']  + 1e-10)
-    LevelsData['Tau']  = np.log10(LevelsData['Tau'])
-    LevelsData['ro']   = np.log10(LevelsData['ro'])
-    
+    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 5.11304329E+00 + 1e-10)
+    LevelsData['Rot']  = np.log10(LevelsData['ERot']                  + 1e-10)
+
     #===================================================================================================================================
     ### Loading Input and Output for Training and Validation
     print('[SurQCT]:   Generating Training and Validation Data Points')
@@ -77,7 +74,7 @@ def generate_trainingdata(InputData):
             np.random.seed(InputData.iLevelsSeedsVec[0])
             iIdxVec = np.random.choice(NLevels, InputData.NiLevelsSampled, replace=False)
         elif (InputData.iLevelsIntFlg == 3):
-            NSamplesPerGroup = 3
+            NSamplesPerGroup = 1
             iIdxVec          = sample_initiallevels(InputData.PathToGrouping, NSamplesPerGroup, InputData.iLevelsSeedsVec[iT])
         elif (InputData.iLevelsIntFlg == 4):
             iIdxVec = read_sampledinitiallevels(InputData.PathToSampledLevels, TTranVec[iT])
@@ -127,9 +124,9 @@ def generate_trainingdata(InputData):
 
 
     ### Concatenating Horizzontally
-    iLevelsData         = pd.concat([iLevelsData, TTranData], axis=1)
+    iLevelsData         = pd.concat([iLevelsData], axis=1)
     iLevelsData.columns = [(VarName + '_i') for VarName in iLevelsData.columns]
-    jLevelsData         = pd.concat([jLevelsData, TTranData], axis=1)
+    jLevelsData         = pd.concat([jLevelsData], axis=1)
     jLevelsData.columns = [(VarName + OtherVar) for VarName in jLevelsData.columns]
     DataSet             = pd.concat([iLevelsData, jLevelsData], axis=1)
     DataSet             = pd.concat([DataSet, KExcitData], axis=1)
@@ -177,9 +174,9 @@ def generate_trainingdata(InputData):
     x_all   = AllData.copy()
     x_all.pop('KExcit')
 
-    y_train = TrainDataFinal[['KExcit', 'TTran_i']]
-    y_valid = ValidDataFinal[['KExcit', 'TTran_i']]
-    y_all   = AllData[['KExcit', 'TTran_i']]
+    y_train = TrainDataFinal[['KExcit']]
+    y_valid = ValidDataFinal[['KExcit']]
+    y_all   = AllData[['KExcit']]
 
 
 
@@ -240,9 +237,9 @@ def generate_trainingdata(InputData):
     jLevelsData.index   = np.arange(len(TTranData))
     KExcitData.index    = np.arange(len(TTranData))
 
-    iLevelsData         = pd.concat([iLevelsData, TTranData], axis=1)
+    iLevelsData         = pd.concat([iLevelsData], axis=1)
     iLevelsData.columns = [(VarName + '_i') for VarName in iLevelsData.columns]
-    jLevelsData         = pd.concat([jLevelsData, TTranData], axis=1)
+    jLevelsData         = pd.concat([jLevelsData], axis=1)
     jLevelsData.columns = [(VarName + OtherVar) for VarName in jLevelsData.columns]
     DataSet             = pd.concat([iLevelsData, jLevelsData], axis=1)
     DataSet             = pd.concat([DataSet, KExcitData], axis=1)
@@ -299,9 +296,9 @@ def generate_trainingdata(InputData):
     iLevelsData.index   = np.arange(len(TTranData))
     jLevelsData.index   = np.arange(len(TTranData))
 
-    iLevelsData         = pd.concat([iLevelsData, TTranData], axis=1)
+    iLevelsData         = pd.concat([iLevelsData], axis=1)
     iLevelsData.columns = [(VarName + '_i') for VarName in iLevelsData.columns]
-    jLevelsData         = pd.concat([jLevelsData, TTranData], axis=1)
+    jLevelsData         = pd.concat([jLevelsData], axis=1)
     jLevelsData.columns = [(VarName + OtherVar) for VarName in jLevelsData.columns]
     DataSet             = pd.concat([iLevelsData, jLevelsData], axis=1)
     DataSet             = pd.concat([DataSet, iIdxData],   axis=1)
@@ -318,6 +315,9 @@ def generate_trainingdata(InputData):
     ExtraData = (x_extra)
 
     return InputData, TrainData, ValidData, AllData, TestData, ExtraData
+
+#=======================================================================================================================================
+
 
 #=======================================================================================================================================
 # Reading Excitation Rates Data 
@@ -474,7 +474,7 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
     #===================================================================================================================================
     print('\n[SurQCT]: Initializing ML Model for KInel and Loading its Parameters ... ')
 
-    PathToRunFld              = SurQCTFldr + '/../' + InputData.RatesType + '/all_temperatures_nondim/KExcit_Test' + str(InputData.NNRunIdx)
+    PathToRunFld              = SurQCTFldr + '/../' + InputData.RatesType + '/KInel_Test' + str(InputData.NNRunIdx)
     InputData.PathToDataFld   = PathToRunFld + '/Data/'                                                               
     InputData.PathToParamsFld = PathToRunFld + '/Params/'                                                            
 
@@ -488,8 +488,8 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
 #    InputData.PathToDataFld   = PathToRunFld + '/Data/'                                                               
 #    InputData.PathToParamsFld = PathToRunFld + '/Params/'   
 #
-    NN_KExch     = model(InputData, PathToRunFld, None, None)
-    NN_KExch.load_params(InputData.PathToParamsFld)
+#    NN_KExch     = model(InputData, PathToRunFld, None, None)
+#    NN_KExch.load_params(InputData.PathToParamsFld)
 
     #===================================================================================================================================
 
@@ -504,36 +504,20 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
     LevelsData                = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
     LevelsData                = LevelsData[InputData.xVarsVec]
     NLevels                   = LevelsData.shape[0]
-#    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 5.11304329E+00 + 1e-10)
-    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 1e-10)
-    LevelsData['Rot'] = np.log10(LevelsData['ERot']  + 1e-10)
-    LevelsData['Tau']  = np.log10(LevelsData['Tau'])
-    LevelsData['ro']   = np.log10(LevelsData['ro'])
 
 
     #===================================================================================================================================
     ### Initializing Rates Matrix
     KInelMat = None #np.zeros((NLevels, NLevels))
-    KExchMat = None #np.zeros((NLevels, NLevels))
-
-    try:
-        os.makedirs(KineticFldr)
-    except OSError as e:
-        pass
+#    KExchMat = None #np.zeros((NLevels, NLevels))
 
 
-    PathToKineticFldr = KineticFldr + '/KExcit_Test' + str(InputData.NNRunIdx) + '/T' + str(int(TTran)) + 'K'
-    try:
-        os.makedirs(PathToKineticFldr)
-    except OSError as e:
-        pass
-    
     #===================================================================================================================================
     ### Opening Files for Writing Rates
-    KineticFile_KInel = PathToKineticFldr + '/Inel.dat'
+    KineticFile_KInel = KineticFldr + '/Test' + str(InputData.NNRunIdx) + '/T' + str(int(TTran)) + 'K/Inel.dat'
     csvkinetics_KInel = write_predictiondata(KineticFile_KInel, None, -1, None, None, None)
-    KineticFile_KExch = PathToKineticFldr + '/Exch_Type1.dat'
-    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, None, -1, None, None, None)
+#    KineticFile_KExch = KineticFldr + '/Test' + str(InputData.NNRunIdx) + '/T' + str(int(TTran)) + 'K/Exch_Type1.dat'
+#    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, None, -1, None, None, None)
 
 
     ### Loop on Initial States
@@ -571,21 +555,21 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
         csvkinetics_KInel        = write_predictiondata(KineticFile_KInel, csvkinetics_KInel, 0, iIdx, jIdxVec, KInel[jIdxVec,0])
 
 
-        KExch                    = np.exp( NN_KExch.Model.predict(xTemp[NN_KExch.xTrainingVar]) ) / InputData.MultFact
-        jIdxVec                  = [i for i in range(jNLevels) if (KExch[i,0] > MinValue)]
-        #KExchMat[iIdx, jIdxVec]  = KExch[jIdxVec,0] 
-        
-        csvkinetics_KExch        = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, 0, iIdx, jIdxVec, KExch[jIdxVec,0])
+#        KExch                    = np.exp( NN_KExch.Model.predict(xTemp[NN_KExch.xTrainingVar]) ) / InputData.MultFact
+#        jIdxVec                  = [i for i in range(jNLevels) if (KExch[i,0] > MinValue)]
+#        #KExchMat[iIdx, jIdxVec]  = KExch[jIdxVec,0] 
+#        
+#        csvkinetics_KExch        = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, 0, iIdx, jIdxVec, KExch[jIdxVec,0])
 
 
     #===================================================================================================================================
     ### Closing Files for Rates
     csvkinetics_KInel = write_predictiondata(KineticFile_KInel, csvkinetics_KInel, -2, None, None, None)
-    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, -2, None, None, None)
+#    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, -2, None, None, None)
 
 
-    return KInelMat, KExchMat
-#    return KInelMat
+#    return KInelMat, KExchMat
+    return KInelMat
 #=======================================================================================================================================
 
 

@@ -29,11 +29,7 @@ def save_parameters(model, InputData):
         biases     = model.biasesBranchBest[iBranch]
 
         NetName = 'Branch' + str(iBranch+1)
-<<<<<<< HEAD
-        #print('[ProPDE]:   Saving Parameters for ' + NetName)
-=======
         print('[ProPDE]:   Saving Parameters for Net ' + NetName)
->>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
         PathToFldr = InputData.PathToParamsFld + NetName + '/'
         try:
             os.makedirs(PathToFldr)
@@ -47,37 +43,37 @@ def save_parameters(model, InputData):
 
         NLayers = InputData.BranchLayers.shape[1]
         for iLayer in range(NLayers-1):
-<<<<<<< HEAD
-            PathToFldr = InputData.PathToParamsFld + NetName + '/HL' + str(iLayer+1) + '/'
-=======
+#<<<<<<< HEAD
+#            PathToFldr = InputData.PathToParamsFld + NetName + '/HL' + str(iLayer+1) + '/'
+#=======
             if iLayer == 0:
                 LayerName = 'InputLayer'
             else:
                 LayerName = 'HiddenLayer' + str(iLayer)
 
             PathToFldr = InputData.PathToParamsFld + NetName + '/' + LayerName + '/'
->>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
+#>>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
             try:
                 os.makedirs(PathToFldr)
             except OSError as e:
                 pass
 
             if ( (iLayer == NLayers-2) and not(InputData.BiasBranchFlg) ):
-<<<<<<< HEAD
+#<<<<<<< HEAD
                 #print('[ProPDE]:   Saving Weights for Layer ' + str(iLayer+1))
-=======
+#=======
                 print('[ProPDE]:     Saving Weights for ' + LayerName)
->>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
+#>>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
                 PathToFile = PathToFldr + 'Weights.npz'
                 np.savez(PathToFile,     weights[iLayer])
                 PathToFile = PathToFldr + 'Weights.csv'
                 save_weigths(PathToFile, weights[iLayer])
             else:
-<<<<<<< HEAD
-                #print('[ProPDE]:   Saving Weights and Biases for Layer ' + str(iLayer+1))
-=======
+#<<<<<<< HEAD
+#                #print('[ProPDE]:   Saving Weights and Biases for Layer ' + str(iLayer+1))
+#=======
                 print('[ProPDE]:     Saving Weights and Biases for ' + LayerName)
->>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
+#>>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
                 PathToFile = PathToFldr + 'Weights.npz'
                 np.savez(PathToFile,     weights[iLayer], biases[iLayer])
                 PathToFile = PathToFldr + 'Weights.csv'
@@ -88,11 +84,11 @@ def save_parameters(model, InputData):
             
 
     NetName = 'Trunk'
-<<<<<<< HEAD
+#<<<<<<< HEAD
     #print('[ProPDE]:   Saving Parameters for ' + NetName)
-=======
+#=======
     print('[ProPDE]:   Saving Parameters for Net ' + NetName)
->>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
+#>>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
     PathToFldr = InputData.PathToParamsFld + NetName + '/'
     try:
         os.makedirs(PathToFldr)
@@ -108,26 +104,26 @@ def save_parameters(model, InputData):
 
     NLayers = InputData.TrunkLayers.shape[0]
     for iLayer in range(NLayers-1):
-<<<<<<< HEAD
-        PathToFldr = InputData.PathToParamsFld + NetName + '/HL' + str(iLayer+1) + '/'
-=======
+#<<<<<<< HEAD
+#        PathToFldr = InputData.PathToParamsFld + NetName + '/HL' + str(iLayer+1) + '/'
+#=======
         if iLayer == 0:
             LayerName = 'InputLayer'
         else:
             LayerName = 'HiddenLayer' + str(iLayer)
 
         PathToFldr = InputData.PathToParamsFld + NetName + '/' + LayerName + '/'
->>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
+#>>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
         try:
             os.makedirs(PathToFldr)
         except OSError as e:
             pass
 
-<<<<<<< HEAD
+#<<<<<<< HEAD
         #print('[ProPDE]:   Saving Weights and Biases for Layer ' + str(iLayer+1))
-=======
+#=======
         print('[ProPDE]:     Saving Weights and Biases for ' + LayerName)
->>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
+#>>>>>>> c94cae8a81afa8855c29b2edc1871e5922d9f7e4
         PathToFile = PathToFldr + 'Weights.npz'
         np.savez(PathToFile,     weights[iLayer], biases[iLayer])
         PathToFile = PathToFldr + 'Weights.csv'

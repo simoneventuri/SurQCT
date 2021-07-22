@@ -27,7 +27,7 @@ class inputdata(object):
         ### Paths
         self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
         self.SurQCTFldr          = SurQCTFldr
-        self.NNRunIdx            = 3                                                                      # Training Case Identification Number 
+        self.NNRunIdx            = 1                                                                      # Training Case Identification Number 
         self.PathToRunFld        = None                                                                   # Path To Training Folder
         self.TBCheckpointFldr    = '/TB/'
         self.PathToFigFld        = '/Figures/'                                                            # Path To Training Figures Folder 

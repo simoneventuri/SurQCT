@@ -20,6 +20,11 @@ from sklearn.model_selection              import train_test_split
 # from Reading  import read_parameters_hdf5
 # from Saving   import save_parameters, save_parameters_hdf5, save_data
 
+WORKSPACE_PATH = os.environ['WORKSPACE_PATH']
+SurQCTFldr     = WORKSPACE_PATH + '/SurQCT/surqct/'
+
+sys.path.append(SurQCTFldr + 'src/Callbacks/')
+from customCallbacks import customReduceLROnPlateau
 
 #=======================================================================================================================================
 def NNBranch(InputData, normalized, NNName, Idx):
@@ -100,7 +105,6 @@ class model:
         if (InputData.DefineModelIntFlg > 0):
             print('[SurQCT]:   Defining ML Model from Scratch')
 
-
             #---------------------------------------------------------------------------------------------------------------------------
             xDim               = len(InputData.xVarsVec)+1
             input_             = tf.keras.Input(shape=[xDim*2,])
@@ -143,7 +147,7 @@ class model:
 
 
             #---------------------------------------------------------------------------------------------------------------------------
-            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=50000, decay_rate=0.98, staircase=True)
+            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=200000, decay_rate=0.98, staircase=True)
 
             MTD = InputData.Optimizer
             if (MTD == 'adadelta'):  # A SGD method based on adaptive learning rate
@@ -237,10 +241,10 @@ class model:
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         MCCallBack    = callbacks.ModelCheckpoint(filepath=MCFile, monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=0, mode='auto', save_freq='epoch', options=None)
-        #LRCallBack    = callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.7, patience=500, mode='auto', min_delta=1.e-6, cooldown=0, min_lr=1.e-8, verbose=1)
+        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-4, cooldown=0, min_lr=1.e-8, verbose=1)
         TBCallBack    = callbacks.TensorBoard(log_dir=InputData.TBCheckpointFldr, histogram_freq=100, batch_size=InputData.MiniBatchSize, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
-        #CallBacksList = [MCCallBack, ESCallBack, TBCallBack]
-        CallBacksList = [ESCallBack, TBCallBack, MCCallBack]
+        CallBacksList = [ESCallBack, TBCallBack, MCCallBack, LRCallBack]
+        #CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)
         # xTrain, xValid, yTrain, yValid = train_test_split(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], test_size=InputData.ValidPerc/100.0) #stratify=self.yTrain[self.yTrainingVar],

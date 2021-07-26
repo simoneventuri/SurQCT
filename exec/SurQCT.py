@@ -130,15 +130,15 @@ if __name__ == "__main__":
 
     #===================================================================================================================================
 
-#    if (InputData.PlotIntFlg >= 1):
-#
-#        print('\n[SurQCT]: Evaluating the ML Model at the Training Data and Plotting the Results ... ')
-#        
-#        xAll      = AllData[0]
-#        yAll      = AllData[1]
-#        yPred     = NN.Model.predict(xAll[NN.xTrainingVar])
-#
-#        plot_prediction(InputData, 'Train', InputData.TTranVecTrain, xAll, yAll, yPred)
+    # if (InputData.PlotIntFlg >= 1):
+
+       # print('\n[SurQCT]: Evaluating the ML Model at the Training Data and Plotting the Results ... ')
+       
+       # xAll      = AllData[0]
+       # yAll      = AllData[1]
+       # yPred     = NN.Model.predict(xAll[NN.xTrainingVar])
+
+       # plot_prediction(InputData, 'Train', InputData.TTranVecTrain, xAll, yAll, yPred)
 
     #===================================================================================================================================
 

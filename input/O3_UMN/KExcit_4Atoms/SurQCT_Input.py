@@ -12,7 +12,8 @@ class inputdata(object):
         ### Case Name
         self.RatesType     = 'KExcit'
         self.ExcitType     = 'KExcit'
-        
+        self.SameMolecules = True
+
         #=======================================================================================================================================
         ### Execution Flags
         self.DefineModelIntFlg   = 1
@@ -27,32 +28,36 @@ class inputdata(object):
         ### Paths
         self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
         self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
-        self.NNRunIdx            = 101                                                                     # Training Case Identification Number 
+        self.NNRunIdx            = 1                                                                      # Training Case Identification Number 
         self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures_nondim/' + self.ExcitType + '_Test' + str(self.NNRunIdx) # Path To Training Fldr
         self.TBCheckpointFldr    = self.PathToRunFld + '/TB/'
         self.PathToFigFld        = self.PathToRunFld + '/Figures/'                                        # Path To Training Figures Folder 
         self.PathToDataFld       = self.PathToRunFld + '/Data/'                                           # Path To Training Data Folder 
         self.PathToParamsFld     = self.PathToRunFld + '/Params/'                                         # Path To Training Parameters Folder 
-        self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_HighAccuracy_AmalInel/O3_UMN.hdf5'
+        self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_HighAccuracy/O3_UMN.hdf5'
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
-
-        self.Molecules           = ['O2','O2'] 
-        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd.csv',
-                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd.csv']
+        
+        self.Molecules           = ['O2','O2','O2','O2'] 
+        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv']
         self.PathToDiatFile      = [self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
+                                    self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
+                                    self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
                                     self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp']   
-                                                            
-        self.PathToGrouping      = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'   
+        self.PathToGrouping      = [self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv',
+                                    self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv']
 
         #=======================================================================================================================================
         ## NN Model Structure
         # self.ApproxModel         = 'FNN'
         # self.NNLayers            = np.array([32, 32, 32 ])
         # self.ActFun              = ['sigmoid', 'sigmoid', 'sigmoid']
-        self.ApproxModel         = 'DotNet'
-        self.NormalizeInput      = True
-        self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
-        self.ActFun              = [['selu', 'selu', 'selu'], ['selu', 'relu', 'linear']]
+        self.ApproxModel         = 'DotNet_4Atoms'
+        self.NormalizeInput      = False
+        self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64]), np.array([64, 64, 64]), np.array([64, 64, 64])]
+        self.ActFun              = [['selu', 'selu', 'selu'], ['selu', 'relu', 'linear'], ['selu', 'selu', 'selu'], ['selu', 'relu', 'linear']]
         self.DropOutRate         = 1.e-3
         # self.ApproxModel         = 'SumNet'
         # self.NNLayers            = [np.array([32, 32, 32]), np.array([32, 32, 32]), np.array([32, 1])]
@@ -61,18 +66,19 @@ class inputdata(object):
         #=======================================================================================================================================
         ### Training Quanties
         self.xVarsVec            = ['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro'] #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
-        self.OtherVar            = '_Delta'
+        self.OtherVarI           = '_DeltaI'
+        self.OtherVarJ           = '_DeltaJ'
         self.NSamplesNoise       = 0
         self.RandDataFlg         = True                                                                      # Randomize Training Data 
         self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0])#np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0, 30000.0, 50000.0])])
         self.iLevelsIntFlg       = 4
-        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/AmalInel_Sampled/O2_Sampled_Inel_'
+        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/DPM_Sampled/O2_Sampled_'
         self.ExoEndoFlg          = False
         #self.iLevelsSeedsVec     = [0, 4, 3, 1, 2]
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]
         #self.NiLevelsSampled    = 100
 
-        self.NEpoch              = 100000                                                                # Number of Epoches
+        self.NEpoch              = 100000                                                                     # Number of Epoches
         self.MiniBatchSize       = 64
         self.LossFunction        = 'mean_absolute_percentage_error'#'mean_squared_logarithmic_error'
         self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate

@@ -26,29 +26,36 @@ SurQCTFldr     = WORKSPACE_PATH + '/SurQCT/surqct/'
 sys.path.append(SurQCTFldr + 'src/Callbacks/')
 from customCallbacks import customReduceLROnPlateau
 
+
+
 #=======================================================================================================================================
-def NNBranch(InputData, normalized, NNName, Idx):
+def SubNet(InputData, normalized, NNName, Idx):
 
     kW1      = InputData.WeightDecay[0]
     kW2      = InputData.WeightDecay[1]
     NNLayers = InputData.NNLayers[Idx]
     NLayers  = len(NNLayers)
     ActFun   = InputData.ActFun[Idx]
+    Reuse    = (Idx in [2,3]) and (InputData.SameMolecules)
     Mol      = '_i'
+    if (Idx in [2,3]): 
+        Mol  = '_j'
 
     hiddenVec = [normalized]
     for iLayer in range(NLayers):
         WeightsName = NNName + '_HL' + str(iLayer+1) 
         LayerName   = WeightsName + Mol 
 
-        hiddenVec.append(layers.Dense(units=NNLayers[iLayer],
-                                activation=ActFun[iLayer],
-                                use_bias=True,
-                                kernel_initializer='glorot_normal',
-                                bias_initializer='zeros',
-                                kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                name=LayerName)(hiddenVec[-1]))
+        with tf.variable_scope(WeightsName, reuse=Reuse):
+            
+            hiddenVec.append(layers.Dense(units=NNLayers[iLayer],
+                                    activation=ActFun[iLayer],
+                                    use_bias=True,
+                                    kernel_initializer='glorot_normal',
+                                    bias_initializer='zeros',
+                                    kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
+                                    bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
+                                    name=LayerName)(hiddenVec[-1]))
         
         if (iLayer < NLayers-1):
             hiddenVec.append(layers.Dropout(InputData.DropOutRate, input_shape=(NNLayers[iLayer],))(hiddenVec[-1]))          
@@ -76,7 +83,6 @@ class model:
 
           def build(self, input_shape):
             self.input_shape_  = input_shape 
-            print('dsasa', self.input_shape_)
             
           def call(self, input):
             return input + tf.random.normal(shape=array_ops.shape(input), mean=self.mean, stddev=self.stddev)
@@ -88,13 +94,16 @@ class model:
         #-------------------------------------------------------------------------------------------------------------------------------        
         VarsVec           = InputData.xVarsVec + ['TTran']
         ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec]
-        ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec]
-        self.xTrainingVar = ChooseVarsI + ChooseVarsData
+        ChooseVarsJ       = [(VarName + '_j') for VarName in VarsVec]
+        ChooseVarsDeltaI  = [(VarName + InputData.OtherVarI) for VarName in VarsVec]
+        ChooseVarsDeltaJ  = [(VarName + InputData.OtherVarJ) for VarName in VarsVec]
+        self.xTrainingVar = ChooseVarsI + ChooseVarsJ + ChooseVarsDeltaI + ChooseVarsDeltaJ
         self.yTrainingVar = InputData.RatesType
         print('[SurQCT]:   Variables Selected for Training:')
         print('[SurQCT]:     x = ', self.xTrainingVar)
         print('[SurQCT]:     y = ', self.yTrainingVar)
         #-------------------------------------------------------------------------------------------------------------------------------
+
 
 
         #-------------------------------------------------------------------------------------------------------------------------------  
@@ -105,51 +114,81 @@ class model:
             self.yValid       = ValidData[1]
         #-------------------------------------------------------------------------------------------------------------------------------  
 
+
+
         if (InputData.DefineModelIntFlg > 0):
             print('[SurQCT]:   Defining ML Model from Scratch')
 
             #---------------------------------------------------------------------------------------------------------------------------
-            xDim                = len(InputData.xVarsVec)+1
-            input_              = tf.keras.Input(shape=[xDim*2,])
-            inputI, inputDeltaI = tf.split(input_, num_or_size_splits=[xDim, xDim], axis=1)
+            xDim                                     = len(InputData.xVarsVec)+1
+            input_                                   = tf.keras.Input(shape=[xDim*4,])
+            inputI, inputJ, inputDeltaI, inputDeltaJ = tf.split(input_, num_or_size_splits=[xDim, xDim, xDim, xDim], axis=1)
 
             ### Normalizer Layers
             if (InputData.NormalizeInput):
-                normalizerI         = preprocessing.Normalization()
-                self.xTrainI        = self.xTrain[ChooseVarsI]
+                normalizerI        = preprocessing.Normalization()
+                self.xTrainI       = self.xTrain[ChooseVarsI]
                 normalizerI.adapt(np.array(self.xTrainI))
-                InputI              = normalizerI(inputI)
+                InputI             = normalizerI(inputI)
                 #
-                normalizerDeltaI    = preprocessing.Normalization()
-                self.xTrainDataI    = self.xTrain[ChooseVarsData]
-                normalizerDeltaI.adapt(np.array(self.xTrainDataI))
-                InputDeltaI         = normalizerDeltaI(inputDeltaI)
+                normalizerDeltaI   = preprocessing.Normalization()
+                self.xTrainDeltaI  = self.xTrain[ChooseVarsDeltaI]
+                normalizerDeltaI.adapt(np.array(self.xTrainDeltaI))
+                InputDeltaI        = normalizerDeltaI(inputDeltaI)
+                #
+                if (InputData.SameMolecules):
+                    normalizerJ    = preprocessing.Normalization(mean=InputI.mean.numpy(), variance=InputI.variance.numpy())
+                else:
+                    normalizerJ        = preprocessing.Normalization()
+                    self.xTrainJ       = self.xTrain[ChooseVarsJ]
+                    normalizerJ.adapt(np.array(self.xTrainJ))
+                InputJ             = normalizerJ(inputJ)
+                #
+                if (InputData.SameMolecules):
+                    normalizerDeltaJ  = preprocessing.Normalization(mean=InputDeltaI.mean.numpy(), variance=InputDeltaI.variance.numpy())
+                else:
+                    normalizerDeltaJ  = preprocessing.Normalization()
+                    self.xTrainDeltaJ = self.xTrain[ChooseVarsDeltaJ]
+                    normalizerDeltaJ.adapt(np.array(self.xTrainDeltaJ))
+                InputDeltaJ        = normalizerDeltaJ(inputDeltaJ)
             else:
-                InputI              = inputI
-                InputDeltaI         = inputDeltaI
+                InputI             = inputI
+                InputJ             = inputJ
+                InputDeltaI        = inputDeltaI
+                InputDeltaJ        = inputDeltaJ
 
-            ### NN Branches
-            outputI         = NNBranch(InputData, InputI,      'Branch', 0)
+            ### NNs for i Initial Level
+            outputI         = SubNet(InputData, InputI,      'Branch', 0)
             #
-            outputDelta     = NNBranch(InputData, InputDeltaI, 'Trunk',  1)
+            outputDeltaI    = SubNet(InputData, InputDeltaI, 'Trunk',  1)
 
-            ### Final Dot Product
-            output_1        = layers.Dot(axes=1)([outputI, outputDelta])
+            ### NNs for j Initial Level
+            outputJ         = SubNet(InputData, InputJ,      'Branch', 2)
+            #
+            outputDeltaJ    = SubNet(InputData, InputDeltaJ, 'Trunk',  3)
+
+            ### Final Dot Products
+            output_I        = layers.Dot(axes=1)([outputI,  outputDeltaI])
+            #
+            output_J        = layers.Dot(axes=1)([outputJ,  outputDeltaJ])
+
+            ### From Pik and Pjl to Pij,kl
+            output_P        = layers.Dot(axes=1)([output_I, output_J])
            
-            ### Final Layer
-            output_2        = layers.Dense(units=1,
+            ### Final Layer: From Pij,kl to Kij,kl
+            output_Final    = layers.Dense(units=1,
                                            activation='linear',
                                            use_bias=True,
                                            kernel_initializer='glorot_normal',
                                            bias_initializer='zeros',
-                                           name='FinalScaling')(output_1)   
+                                           name='FinalScaling')(output_P)   
 
             # ### Adding Noise
             # Meann           = -34.5
             # StdDevv         = 0.5
             # output_Final    = AdditiveGaussNoise(Meann, StdDevv)(output_2)
 
-            self.Model      = keras.Model(inputs=[input_], outputs=[output_2] )
+            self.Model      = keras.Model(inputs=[input_], outputs=[output_Final] )
             #---------------------------------------------------------------------------------------------------------------------------
 
 

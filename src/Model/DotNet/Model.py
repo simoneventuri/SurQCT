@@ -26,6 +26,38 @@ SurQCTFldr     = WORKSPACE_PATH + '/SurQCT/surqct/'
 sys.path.append(SurQCTFldr + 'src/Callbacks/')
 from customCallbacks import customReduceLROnPlateau
 
+
+
+#=======================================================================================================================================
+class BiasLayer(layers.Layer):
+    def __init__(self, *args, **kwargs):
+        super(BiasLayer, self).__init__(*args, **kwargs)
+
+    def build(self, input_shape):
+        self.bias = self.add_weight('bias',
+                                    shape=input_shape[1:],
+                                    initializer='zeros',
+                                    trainable=True)
+    def call(self, x):
+        return x + self.bias
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
+from datetime import datetime
+
+def get_curr_time():
+    return datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
+
+def get_start_time():
+    return get_curr_time()
+
+#=======================================================================================================================================
+
+
+
 #=======================================================================================================================================
 def NNBranch(InputData, normalized, NNName, Idx):
 
@@ -76,7 +108,6 @@ class model:
 
           def build(self, input_shape):
             self.input_shape_  = input_shape 
-            print('dsasa', self.input_shape_)
             
           def call(self, input):
             return input + tf.random.normal(shape=array_ops.shape(input), mean=self.mean, stddev=self.stddev)
@@ -134,27 +165,29 @@ class model:
             outputDelta     = NNBranch(InputData, InputDeltaI, 'Trunk',  1)
 
             ### Final Dot Product
-            output_1        = layers.Dot(axes=1)([outputI, outputDelta])
+            output_P        = layers.Dot(axes=1)([outputI, outputDelta])
            
             ### Final Layer
-            output_2        = layers.Dense(units=1,
-                                           activation='linear',
-                                           use_bias=True,
-                                           kernel_initializer='glorot_normal',
-                                           bias_initializer='zeros',
-                                           name='FinalScaling')(output_1)   
+            # output_Final   = layers.Dense(units=1,
+            #                                activation='linear',
+            #                                use_bias=True,
+            #                                kernel_initializer='glorot_normal',
+            #                                bias_initializer='zeros',
+            #                                name='FinalScaling')(output_1)   
+            output_Final    = BiasLayer(name='FinalScaling')(output_P)
 
             # ### Adding Noise
             # Meann           = -34.5
             # StdDevv         = 0.5
             # output_Final    = AdditiveGaussNoise(Meann, StdDevv)(output_2)
 
-            self.Model      = keras.Model(inputs=[input_], outputs=[output_2] )
+            self.Model      = keras.Model(inputs=[input_], outputs=[output_Final] )
             #---------------------------------------------------------------------------------------------------------------------------
 
 
             #---------------------------------------------------------------------------------------------------------------------------
-            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=200000, decay_rate=0.98, staircase=True)
+            #LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=250000, decay_rate=0.97, staircase=True)
+            LearningRate = InputData.LearningRate
 
             MTD = InputData.Optimizer
             if (MTD == 'adadelta'):  # A SGD method based on adaptive learning rate
@@ -251,12 +284,16 @@ class model:
     #===================================================================================================================================
     def train(self, InputData):
 
+        _start_time      = get_start_time()
+        TBCheckpointFldr = InputData.TBCheckpointFldr + "/" + InputData.ExcitType +"/Run" + str(InputData.NNRunIdx) + "_{}".format(get_start_time())
+
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         MCCallBack    = callbacks.ModelCheckpoint(filepath=MCFile, monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=0, mode='auto', save_freq='epoch', options=None)
-        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-4, cooldown=0, min_lr=1.e-8, verbose=1)
-        TBCallBack    = callbacks.TensorBoard(log_dir=InputData.TBCheckpointFldr, histogram_freq=100, batch_size=InputData.MiniBatchSize, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
-        CallBacksList = [ESCallBack, TBCallBack, MCCallBack, LRCallBack]
+        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=200, mode='auto', min_delta=1.e-3, cooldown=100, min_lr=1.e-8, verbose=1)
+        TBCallBack    = callbacks.TensorBoard(log_dir=TBCheckpointFldr, histogram_freq=0, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
+        
+        CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]
         #CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)

@@ -28,9 +28,9 @@ class inputdata(object):
         ### Paths
         self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
         self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
-        self.NNRunIdx            = 101                                                                     # Training Case Identification Number 
+        self.NNRunIdx            = 1                                                                      # Training Case Identification Number 
         self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures_nondim/' + self.ExcitType + '_Test' + str(self.NNRunIdx) # Path To Training Fldr
-        self.TBCheckpointFldr    = self.PathToRunFld + '/TB/'
+        self.TBCheckpointFldr    = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures_nondim/TB/'
         self.PathToFigFld        = self.PathToRunFld + '/Figures/'                                        # Path To Training Figures Folder 
         self.PathToDataFld       = self.PathToRunFld + '/Data/'                                           # Path To Training Data Folder 
         self.PathToParamsFld     = self.PathToRunFld + '/Params/'                                         # Path To Training Parameters Folder 
@@ -53,7 +53,7 @@ class inputdata(object):
         self.ApproxModel         = 'DotNet'
         self.NormalizeInput      = True
         self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
-        self.ActFun              = [['selu', 'selu', 'selu'], ['selu', 'relu', 'linear']]
+        self.ActFun              = [['tanh', 'tanh', 'sigmoid'], ['tanh', 'tanh', 'linear']]
         self.DropOutRate         = 1.e-3
         # self.ApproxModel         = 'SumNet'
         # self.NNLayers            = [np.array([32, 32, 32]), np.array([32, 32, 32]), np.array([32, 1])]
@@ -66,23 +66,23 @@ class inputdata(object):
         self.OtherVar            = '_Delta'
         self.NSamplesNoise       = 0
         self.RandDataFlg         = True                                                                      # Randomize Training Data 
-        self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0])#np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0, 30000.0, 50000.0])])
+        self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0]) #np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0, 30000.0, 50000.0])])
         self.iLevelsIntFlg       = 4
-        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/AmalInel_Sampled/O2_Sampled_Inel_'
+        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/AmalInel_Sampled_with_extremes/O2_Sampled_Inel_'
         self.ExoEndoFlg          = False
         #self.iLevelsSeedsVec     = [0, 4, 3, 1, 2]
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]
         #self.NiLevelsSampled    = 100
 
-        self.NEpoch              = 5                                                                      # Number of Epoches
+        self.NEpoch              = 50000                                                                      # Number of Epoches
         self.MiniBatchSize       = 64
         self.LossFunction        = 'mean_absolute_percentage_error'#'mean_squared_logarithmic_error'
         self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
-        self.WeightDecay         = np.array([1.e-5, 1.e-4], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
+        self.WeightDecay         = np.array([5.e-5, 1.e-10], dtype=np.float64)                               # Hyperparameters for L1 and L2 Weight Decay Regularizations
         self.ImpThold            = 1.e-4   
-        self.NPatience           = 300 
+        self.NPatience           = 1000 
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)
 
         #=======================================================================================================================================

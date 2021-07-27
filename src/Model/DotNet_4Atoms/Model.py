@@ -29,6 +29,23 @@ from customCallbacks import customReduceLROnPlateau
 
 
 #=======================================================================================================================================
+class BiasLayer(layers.Layer):
+    def __init__(self, *args, **kwargs):
+        super(BiasLayer, self).__init__(*args, **kwargs)
+
+    def build(self, input_shape):
+        self.bias = self.add_weight('bias',
+                                    shape=input_shape[1:],
+                                    initializer='zeros',
+                                    trainable=True)
+    def call(self, x):
+        return x + self.bias
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
 def SubNet(InputData, normalized, NNName, Idx):
 
     kW1      = InputData.WeightDecay[0]
@@ -176,12 +193,13 @@ class model:
             output_P        = layers.Dot(axes=1)([output_I, output_J])
            
             ### Final Layer: From Pij,kl to Kij,kl
-            output_Final    = layers.Dense(units=1,
-                                           activation='linear',
-                                           use_bias=True,
-                                           kernel_initializer='glorot_normal',
-                                           bias_initializer='zeros',
-                                           name='FinalScaling')(output_P)   
+            # output_Final    = layers.Dense(units=1,
+            #                                activation='linear',
+            #                                use_bias=True,
+            #                                kernel_initializer='glorot_normal',
+            #                                bias_initializer='zeros',
+            #                                name='FinalScaling')(output_P)   
+            output_Final    = BiasLayer(name='FinalScaling')(output_P)
 
             # ### Adding Noise
             # Meann           = -34.5
@@ -289,6 +307,9 @@ class model:
 
     #===================================================================================================================================
     def train(self, InputData):
+
+        _start_time      = get_start_time()
+        TBCheckpointFldr = InputData.TBCheckpointFldr + "/TB_{}".format(get_start_time())
 
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"

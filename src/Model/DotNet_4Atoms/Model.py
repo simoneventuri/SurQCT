@@ -46,6 +46,19 @@ class BiasLayer(layers.Layer):
 
 
 #=======================================================================================================================================
+from datetime import datetime
+
+def get_curr_time():
+    return datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
+
+def get_start_time():
+    return get_curr_time()
+
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
 def SubNet(InputData, normalized, NNName, Idx):
 
     kW1      = InputData.WeightDecay[0]
@@ -309,14 +322,15 @@ class model:
     def train(self, InputData):
 
         _start_time      = get_start_time()
-        TBCheckpointFldr = InputData.TBCheckpointFldr + "/TB_{}".format(get_start_time())
+        TBCheckpointFldr = InputData.TBCheckpointFldr + "/" + InputData.ExcitType +"/Run" + str(InputData.NNRunIdx) + "_{}".format(get_start_time())
 
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         MCCallBack    = callbacks.ModelCheckpoint(filepath=MCFile, monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=0, mode='auto', save_freq='epoch', options=None)
-        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-4, cooldown=0, min_lr=1.e-8, verbose=1)
-        TBCallBack    = callbacks.TensorBoard(log_dir=InputData.TBCheckpointFldr, histogram_freq=100, batch_size=InputData.MiniBatchSize, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
-        CallBacksList = [ESCallBack, TBCallBack, MCCallBack, LRCallBack]
+        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=200, mode='auto', min_delta=1.e-3, cooldown=100, min_lr=1.e-8, verbose=1)
+        TBCallBack    = callbacks.TensorBoard(log_dir=TBCheckpointFldr, histogram_freq=0, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
+        
+        CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]
         #CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)

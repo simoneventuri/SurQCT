@@ -117,9 +117,10 @@ class model:
 
 
         #-------------------------------------------------------------------------------------------------------------------------------        
-        VarsVec           = InputData.xVarsVec + ['TTran']
-        ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec]
-        ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec]
+        VarsVec_i         = InputData.xVarsVec_i + ['TTran']
+        ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec_i]
+        VarsVec_Delta     = InputData.xVarsVec_Delta + ['TTran']
+        ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec_Delta]
         self.xTrainingVar = ChooseVarsI + ChooseVarsData
         self.yTrainingVar = InputData.RatesType
         print('[SurQCT]:   Variables Selected for Training:')
@@ -140,9 +141,10 @@ class model:
             print('[SurQCT]:   Defining ML Model from Scratch')
 
             #---------------------------------------------------------------------------------------------------------------------------
-            xDim                = len(InputData.xVarsVec)+1
-            input_              = tf.keras.Input(shape=[xDim*2,])
-            inputI, inputDeltaI = tf.split(input_, num_or_size_splits=[xDim, xDim], axis=1)
+            xDim_i              = len(VarsVec_i)
+            xDim_Delta          = len(VarsVec_Delta)
+            input_              = tf.keras.Input(shape=[xDim_i+xDim_Delta,])
+            inputI, inputDeltaI = tf.split(input_, num_or_size_splits=[xDim_i, xDim_Delta], axis=1)
 
             ### Normalizer Layers
             if (InputData.NormalizeInput):
@@ -290,7 +292,7 @@ class model:
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         MCCallBack    = callbacks.ModelCheckpoint(filepath=MCFile, monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=0, mode='auto', save_freq='epoch', options=None)
-        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=200, mode='auto', min_delta=1.e-3, cooldown=100, min_lr=1.e-8, verbose=1)
+        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-2, cooldown=100, min_lr=1.e-8, verbose=1)
         TBCallBack    = callbacks.TensorBoard(log_dir=TBCheckpointFldr, histogram_freq=0, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
         
         CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]

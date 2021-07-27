@@ -18,25 +18,41 @@ from os                                   import path
 #=======================================================================================================================================
 def generate_trainingdata(InputData):
 
-    from Reading  import read_levelsdata, sample_initiallevels, read_sampledinitiallevels
+    from Reading  import read_levelsdata, read_diatdata, sample_initiallevels, read_sampledinitiallevels
 
     OtherVar           = InputData.OtherVar
-    xVarsVec           = InputData.xVarsVec
+    xVarsVec_i         = InputData.xVarsVec_i
+    xVarsVec_Delta     = InputData.xVarsVec_Delta
+    xVarsVec           = list(set(xVarsVec_i) | set(xVarsVec_Delta))
+    print('[SurQCT]:   Reading Variables: ', xVarsVec)
 
     InputData.MultFact = 1.e+09
     MinValueTrain      = 1.e-16 * InputData.MultFact
     MinValueTest       = 1.e-16 * InputData.MultFact
     NoiseSD            = 1.e-13 * InputData.MultFact
 
+    NMolecules         = len(InputData.PathToLevelsFile)
+
     InputData.iLevelsVecTest = list(np.array(InputData.iLevelsVecTest) - 1)
 
 
     #===================================================================================================================================
     ### Reading Levels Info of Initial and Final Molecules
-    LevelsData         = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
-    NLevels            = LevelsData.shape[0]
+    LevelsData = []
+    DiatData   = []
+    NLevels    = []
+    for iMol in range(NMolecules):
+        
+        LevelsDataTemp = read_levelsdata(InputData.PathToLevelsFile[iMol], xVarsVec, '')
+        LevelsData.append(LevelsDataTemp)
 
-    
+        DiatDataTemp = read_diatdata(InputData.PathToDiatFile[iMol], InputData.Molecules[iMol], InputData.TTranVecTrain, InputData.TTranVecTest)
+        DiatData.append(DiatDataTemp)
+        
+        NLevelsTemp    = LevelsDataTemp.shape[0]
+        NLevels.append(NLevelsTemp)
+
+
     #===================================================================================================================================
     ### Loading Input and Output for Training and Validation
     print('[SurQCT]:   Generating Training and Validation Data Points')
@@ -47,12 +63,8 @@ def generate_trainingdata(InputData):
     ### Initializing Quantities
     iIdxData         = pd.DataFrame(columns = ['Idx_i'])
     jIdxData         = pd.DataFrame(columns = ['Idx_j'])
-    kIdxData         = pd.DataFrame(columns = ['Idx_k'])
-    lIdxData         = pd.DataFrame(columns = ['Idx_l'])
     iLevelsData      = pd.DataFrame(columns = xVarsVec)
     jLevelsData      = pd.DataFrame(columns = xVarsVec)
-    kLevelsData      = pd.DataFrame(columns = xVarsVec)
-    lLevelsData      = pd.DataFrame(columns = xVarsVec)
     TTranData        = pd.DataFrame(columns = ['TTran'])
     KExcitData       = pd.DataFrame(columns = ['KExcit'])
 
@@ -75,7 +87,7 @@ def generate_trainingdata(InputData):
             iIdxVec = InputData.iLevelsVec
         elif (InputData.iLevelsIntFlg == 2):
             np.random.seed(InputData.iLevelsSeedsVec[0])
-            iIdxVec = np.random.choice(NLevels, InputData.NiLevelsSampled, replace=False)
+            iIdxVec = np.random.choice(NLevels[0], InputData.NiLevelsSampled, replace=False)
         elif (InputData.iLevelsIntFlg == 3):
             NSamplesPerGroup = 3
             iIdxVec          = sample_initiallevels(InputData.PathToGrouping, NSamplesPerGroup, InputData.iLevelsSeedsVec[iT])
@@ -84,12 +96,17 @@ def generate_trainingdata(InputData):
         print('[SurQCT]:       Vector of Initial Levels: iIdxVec = ', iIdxVec)
         iIdxVec = iIdxVec - 1
 
+        
 
         ### Loop on Initial States
+        Str = 'q_'+str(int(TTranVec[iT]))
         for iIdx in iIdxVec:
 
             ### Selecting only Final States with EXOTHERMIC KExit > MinValueTrain 
-            jIdxVec               = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and jIdx<iIdx)]
+            if (InputData.ExoEndoFlg):
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] < DiatData[0]['EInt'].to_numpy()[iIdx])]
+            else:
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    > DiatData[0][Str].to_numpy()[iIdx])]
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
             
@@ -103,17 +120,18 @@ def generate_trainingdata(InputData):
 
             KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KMatoI[iIdx, jIdxVec]}))
             
-            iLevelsDataTemp       = LevelsData.iloc[kIdxVec,:].copy()
+            iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
-            iLevelsData           = iLevelsData.append(iLevelsDataTemp)
+            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
 
-            jLevelsDataTemp       = LevelsData.iloc[jIdxVec,:].copy()        
+            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy() 
+            jLevelsDataTemp       = jLevelsDataTemp   
             jLevelsDataTemp.index = np.arange(len(TTran))
             if (OtherVar == '_Delta'):
                 jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
-            jLevelsData           = jLevelsData.append(jLevelsDataTemp)
+            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
 
         print('[SurQCT]:       Now the Data Matrix contains ', len(KExcitData), ' Data Points')
 
@@ -207,9 +225,13 @@ def generate_trainingdata(InputData):
             KMatoI                    = KInelMat + KExchMatList[0]
 
 
+        Str     = 'q_'+str(int(TTranVec[iT]))
         iIdxVec = InputData.iLevelsVecTest
         for iIdx in iIdxVec:
-            jIdxVec               = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTest) if (x and jIdx<iIdx)]
+            if (InputData.ExoEndoFlg):
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] < DiatData[0]['EInt'].to_numpy()[iIdx])]
+            else:
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    > DiatData[0][Str].to_numpy()[iIdx])]
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
     
@@ -221,17 +243,17 @@ def generate_trainingdata(InputData):
 
             KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': np.log( KMatoI[iIdx, jIdxVec] )}))
             
-            iLevelsDataTemp       = LevelsData.iloc[kIdxVec,:].copy()
+            iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
-            iLevelsData           = iLevelsData.append(iLevelsDataTemp)
+            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
 
-            jLevelsDataTemp       = LevelsData.iloc[jIdxVec,:].copy()        
+            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()   
             jLevelsDataTemp.index = np.arange(len(TTran))
             if (OtherVar == '_Delta'):
                 jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
-            jLevelsData           = jLevelsData.append(jLevelsDataTemp)
+            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
             
     iIdxData.index      = np.arange(len(TTranData))
     jIdxData.index      = np.arange(len(TTranData))
@@ -271,7 +293,7 @@ def generate_trainingdata(InputData):
 
         iIdxVec = InputData.iLevelsVecTest
         for iIdx in iIdxVec:
-            jIdxVec               = np.arange(NLevels)
+            jIdxVec               = np.arange(NLevels[1])
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
     
@@ -281,17 +303,17 @@ def generate_trainingdata(InputData):
             TTran                 = np.ones((jNLevels)) * TTranVec[iT]
             TTranData             = TTranData.append(pd.DataFrame({'TTran': TTran}))
             
-            iLevelsDataTemp       = LevelsData.iloc[kIdxVec,:].copy()
+            iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
-            iLevelsData           = iLevelsData.append(iLevelsDataTemp)
+            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
 
-            jLevelsDataTemp       = LevelsData.iloc[jIdxVec,:].copy()        
+            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()  
             jLevelsDataTemp.index = np.arange(len(TTran))
             if (OtherVar == '_Delta'):
                 jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
-            jLevelsData           = jLevelsData.append(jLevelsDataTemp)
+            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
             
     iIdxData.index      = np.arange(len(TTranData))
     jIdxData.index      = np.arange(len(TTranData))
@@ -506,20 +528,19 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
 
     #===================================================================================================================================
     ### Reading Levels Info of Initial and Final Molecules
-    LevelsData                = read_levelsdata(InputData.PathToLevelsFile[0], xVarsVec, '')
-    LevelsData                = LevelsData[InputData.xVarsVec]
-    NLevels                   = LevelsData.shape[0]
-#    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 5.11304329E+00 + 1e-10)
-    LevelsData['EVib'] = np.log10(LevelsData['EVib'] + 1e-10)
-    LevelsData['Rot'] = np.log10(LevelsData['ERot']  + 1e-10)
-    LevelsData['Tau']  = np.log10(LevelsData['Tau'])
-    LevelsData['ro']   = np.log10(LevelsData['ro'])
+    LevelsData = []
+    NLevels    = []
+    for iMol in range(NMolecules):
+        LevelsDataTemp = read_levelsdata(InputData.PathToLevelsFile[iMol], xVarsVec, '')
+        LevelsData.append(LevelsDataTemp)
+        NLevelsTemp    = LevelsDataTemp.shape[0]
+        NLevels.append(NLevelsTemp)
 
 
     #===================================================================================================================================
     ### Initializing Rates Matrix
-    KInelMat = None #np.zeros((NLevels, NLevels))
-    KExchMat = None #np.zeros((NLevels, NLevels))
+    KInelMat = None #np.zeros((NLevels[0], NLevels[1]))
+    KExchMat = None #np.zeros((NLevels[0], NLevels[1]))
 
     try:
         os.makedirs(KineticFldr)
@@ -542,7 +563,7 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
 
 
     ### Loop on Initial States
-    for iIdx in tqdm(range(1, NLevels), desc='[SurQCT]:     Generating Inelastic and Exchange Rate Matrixes'):
+    for iIdx in tqdm(range(1, NLevels[0]), desc='[SurQCT]:     Generating Inelastic and Exchange Rate Matrixes'):
         time.sleep(0.02)
         jIdxVec               = np.arange(iIdx)
         jNLevels              = len(jIdxVec)
@@ -553,10 +574,10 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
         TTranDataTemp         = pd.DataFrame({'TTran': TTranVec})
         TTranDataTemp.index   = jIdxVec
 
-        iLevelsDataTemp       = LevelsData.iloc[kIdxVec,:].copy()
+        iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
         iLevelsDataTemp.index = jIdxVec
 
-        jLevelsDataTemp       = LevelsData.iloc[jIdxVec,:].copy()        
+        jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()        
         if (OtherVar == '_Delta'):
             jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
         else:

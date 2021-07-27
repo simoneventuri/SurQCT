@@ -38,8 +38,8 @@ class inputdata(object):
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
 
         self.Molecules           = ['O2','O2'] 
-        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv',
-                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv']
+        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd.csv']
         self.PathToDiatFile      = [self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
                                     self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp']   
                                                             
@@ -53,7 +53,7 @@ class inputdata(object):
         self.ApproxModel         = 'DotNet'
         self.NormalizeInput      = True
         self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
-        self.ActFun              = [['tanh', 'tanh', 'sigmoid'], ['tanh', 'tanh', 'linear']]
+        self.ActFun              = [['tanh', 'tanh', 'tanh'], ['tanh', 'tanh', 'linear']]
         self.DropOutRate         = 1.e-3
         # self.ApproxModel         = 'SumNet'
         # self.NNLayers            = [np.array([32, 32, 32]), np.array([32, 32, 32]), np.array([32, 1])]
@@ -62,7 +62,8 @@ class inputdata(object):
 
         #=======================================================================================================================================
         ### Training Quanties
-        self.xVarsVec            = ['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro'] #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
+        self.xVarsVec_i          = ['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro'] #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
+        self.xVarsVec_Delta      = ['EVib','ERotR','rMin','rMax','VMin','VMax','Tau','ri','ro'] #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
         self.OtherVar            = '_Delta'
         self.NSamplesNoise       = 0
         self.RandDataFlg         = True                                                                      # Randomize Training Data 

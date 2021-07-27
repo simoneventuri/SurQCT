@@ -21,7 +21,10 @@ def generate_trainingdata(InputData):
     from Reading  import read_levelsdata, read_diatdata, sample_initiallevels, read_sampledinitiallevels
 
     OtherVar           = InputData.OtherVar
-    xVarsVec           = InputData.xVarsVec
+    xVarsVec_i         = InputData.xVarsVec_i
+    xVarsVec_Delta     = InputData.xVarsVec_Delta
+    xVarsVec           = list(set(xVarsVec_i) | set(xVarsVec_Delta))
+    print('[SurQCT]:   Reading Variables: ', xVarsVec)
 
     InputData.MultFact = 1.e+09
     MinValueTrain      = 1.e-16 * InputData.MultFact
@@ -119,15 +122,16 @@ def generate_trainingdata(InputData):
             
             iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
-            iLevelsData           = iLevelsData.append(iLevelsDataTemp)
+            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
 
-            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()        
+            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy() 
+            jLevelsDataTemp       = jLevelsDataTemp   
             jLevelsDataTemp.index = np.arange(len(TTran))
             if (OtherVar == '_Delta'):
                 jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
-            jLevelsData           = jLevelsData.append(jLevelsDataTemp)
+            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
 
         print('[SurQCT]:       Now the Data Matrix contains ', len(KExcitData), ' Data Points')
 
@@ -241,15 +245,15 @@ def generate_trainingdata(InputData):
             
             iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
-            iLevelsData           = iLevelsData.append(iLevelsDataTemp)
+            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
 
-            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()        
+            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()   
             jLevelsDataTemp.index = np.arange(len(TTran))
             if (OtherVar == '_Delta'):
                 jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
-            jLevelsData           = jLevelsData.append(jLevelsDataTemp)
+            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
             
     iIdxData.index      = np.arange(len(TTranData))
     jIdxData.index      = np.arange(len(TTranData))
@@ -301,15 +305,15 @@ def generate_trainingdata(InputData):
             
             iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
-            iLevelsData           = iLevelsData.append(iLevelsDataTemp)
+            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
 
-            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()        
+            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()  
             jLevelsDataTemp.index = np.arange(len(TTran))
             if (OtherVar == '_Delta'):
                 jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
-            jLevelsData           = jLevelsData.append(jLevelsDataTemp)
+            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
             
     iIdxData.index      = np.arange(len(TTranData))
     jIdxData.index      = np.arange(len(TTranData))

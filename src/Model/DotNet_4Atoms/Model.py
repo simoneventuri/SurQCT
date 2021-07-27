@@ -122,11 +122,12 @@ class model:
 
 
         #-------------------------------------------------------------------------------------------------------------------------------        
-        VarsVec           = InputData.xVarsVec + ['TTran']
-        ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec]
-        ChooseVarsJ       = [(VarName + '_j') for VarName in VarsVec]
-        ChooseVarsDeltaI  = [(VarName + InputData.OtherVarI) for VarName in VarsVec]
-        ChooseVarsDeltaJ  = [(VarName + InputData.OtherVarJ) for VarName in VarsVec]
+        VarsVec_i         = InputData.xVarsVec_i + ['TTran']
+        ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec_i]
+        ChooseVarsJ       = [(VarName + '_j') for VarName in VarsVec_i]
+        VarsVec_Delta     = InputData.xVarsVec_Delta + ['TTran']
+        ChooseVarsDeltaI  = [(VarName + InputData.OtherVarI) for VarName in VarsVec_Delta]
+        ChooseVarsDeltaJ  = [(VarName + InputData.OtherVarJ) for VarName in VarsVec_Delta]
         self.xTrainingVar = ChooseVarsI + ChooseVarsJ + ChooseVarsDeltaI + ChooseVarsDeltaJ
         self.yTrainingVar = InputData.RatesType
         print('[SurQCT]:   Variables Selected for Training:')
@@ -150,9 +151,12 @@ class model:
             print('[SurQCT]:   Defining ML Model from Scratch')
 
             #---------------------------------------------------------------------------------------------------------------------------
-            xDim                                     = len(InputData.xVarsVec)+1
-            input_                                   = tf.keras.Input(shape=[xDim*4,])
-            inputI, inputJ, inputDeltaI, inputDeltaJ = tf.split(input_, num_or_size_splits=[xDim, xDim, xDim, xDim], axis=1)
+            xDim_i                                   = len(VarsVec_i)
+            xDim_j                                   = len(VarsVec_i)
+            xDim_Deltai                              = len(VarsVec_Delta)
+            xDim_Deltaj                              = len(VarsVec_Delta)
+            input_                                   = tf.keras.Input(shape=[xDim_i+xDim_j+xDim_Deltai+xDim_Deltaj,])
+            inputI, inputJ, inputDeltaI, inputDeltaJ = tf.split(input_, num_or_size_splits=[xDim_i, xDim_j, xDim_Deltai, xDim_Deltaj], axis=1)
 
             ### Normalizer Layers
             if (InputData.NormalizeInput):
@@ -206,13 +210,13 @@ class model:
             output_P        = layers.Dot(axes=1)([output_I, output_J])
            
             ### Final Layer: From Pij,kl to Kij,kl
-            # output_Final    = layers.Dense(units=1,
-            #                                activation='linear',
-            #                                use_bias=True,
-            #                                kernel_initializer='glorot_normal',
-            #                                bias_initializer='zeros',
-            #                                name='FinalScaling')(output_P)   
-            output_Final    = BiasLayer(name='FinalScaling')(output_P)
+            output_Final    = layers.Dense(units=1,
+                                           activation='linear',
+                                           use_bias=True,
+                                           kernel_initializer='glorot_normal',
+                                           bias_initializer='zeros',
+                                           name='FinalScaling')(output_P)   
+            # output_Final    = BiasLayer(name='FinalScaling')(output_P)
 
             # ### Adding Noise
             # Meann           = -34.5

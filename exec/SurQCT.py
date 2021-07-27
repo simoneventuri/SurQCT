@@ -44,25 +44,36 @@ if __name__ == "__main__":
     print("\n[SurQCT]: Initializing Input ...")
     InputData    = inputdata(WORKSPACE_PATH, SurQCTFldr)
 
-    PathToFldr = InputData.PathToRunFld
     try:
-        os.makedirs(PathToFldr)
-    except OSError as e:
-        pass
-
-    InputFileOriginal = InputFile + '/SurQCT_Input.py'
-    InputFileTarget   = InputData.PathToRunFld + '/SurQCT_Input.py'
-    try:
-        shutil.copyfile(InputFileOriginal, InputFileTarget)
+        os.makedirs(InputData.PathToRunFld)
     except OSError as e:
         pass
     
-    PathToFldr = InputData.PathToFigFld
+    Prefix = 'Run_'
+    if (InputData.NNRunIdx == 0):
+        if (len([x for x in os.listdir(InputData.PathToRunFld) if 'Run_' in x]) > 0):
+            InputData.NNRunIdx = str(np.amax( np.array( [int(x[len(Prefix):]) for x in os.listdir(InputData.PathToRunFld) if Prefix in x], dtype=int) ) + 1)
+        else:
+            InputData.NNRunIdx = 1
+
+    InputData.PathToRunFld = InputData.PathToRunFld+'/'+Prefix+str(InputData.NNRunIdx)
     try:
-        os.makedirs(PathToFldr)
+        os.makedirs(InputData.PathToRunFld)
     except OSError as e:
         pass
 
+    try:
+        shutil.copyfile(InputFile+'/SurQCT_Input.py', InputData.PathToRunFld+'/SurQCT_Input.py')
+    except OSError as e:
+        pass
+    
+    InputData.PathToFigFld = InputData.PathToRunFld+'/'+InputData.PathToFigFld
+    try:
+        os.makedirs(InputData.PathToFigFld)
+    except OSError as e:
+        pass
+
+    InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
 
     #===================================================================================================================================
 

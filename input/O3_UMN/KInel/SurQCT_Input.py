@@ -17,23 +17,23 @@ class inputdata(object):
         #=======================================================================================================================================
         ### Execution Flags
         self.DefineModelIntFlg   = 1
-        self.TrainIntFlg         = 2                                                                      # Training                       0=>No, 1=>Yes
-        self.WriteParamsIntFlg   = 1                                                                      # Writing Parameters             0=>Never, 1=>After Training, 2=>Also During Training
-        self.WriteDataIntFlg     = 2                                                                      # Writing Data After Training    0=>Never, 1=>After Training, 2=>Also During Training
-        self.TestIntFlg          = 2                                                                      # Evaluating                     0=>No, 1=>Yes
-        self.PlotIntFlg          = 2                                                                      # Plotting Data                  0=>Never, 1=>After Training, 2=>Also During Training
-        self.PredictIntFlg       = 2                                                                      # Plotting Data                  0=>Never, 1=>After Training, 2=>Also During Training
+        self.TrainIntFlg         = 2                                                                                              # Training                       0=>No, 1=>Yes
+        self.WriteParamsIntFlg   = 1                                                                                              # Writing Parameters             0=>Never, 1=>After Training, 2=>Also During Training
+        self.WriteDataIntFlg     = 2                                                                                              # Writing Data After Training    0=>Never, 1=>After Training, 2=>Also During Training
+        self.TestIntFlg          = 2                                                                                              # Evaluating                     0=>No, 1=>Yes
+        self.PlotIntFlg          = 2                                                                                              # Plotting Data                  0=>Never, 1=>After Training, 2=>Also During Training
+        self.PredictIntFlg       = 2                                                                                              # Plotting Data                  0=>Never, 1=>After Training, 2=>Also During Training
 
         #=======================================================================================================================================
         ### Paths
-        self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
-        self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
-        self.NNRunIdx            = 1                                                                      # Training Case Identification Number 
-        self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures_nondim/' + self.ExcitType + '_Test' + str(self.NNRunIdx) # Path To Training Fldr
+        self.WORKSPACE_PATH      = WORKSPACE_PATH                                                                                 # os.getenv('WORKSPACE_PATH')      
+        self.SurQCTFldr          = SurQCTFldr                                                                                     # $WORKSPACE_PATH/ProPDE/
+        self.NNRunIdx            = 0                                                                                              # Training Case Identification Number 
+        self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures_nondim/' + self.ExcitType + '/' # Path To Training Fldr
         self.TBCheckpointFldr    = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures_nondim/TB/'
-        self.PathToFigFld        = self.PathToRunFld + '/Figures/'                                        # Path To Training Figures Folder 
-        self.PathToDataFld       = self.PathToRunFld + '/Data/'                                           # Path To Training Data Folder 
-        self.PathToParamsFld     = self.PathToRunFld + '/Params/'                                         # Path To Training Parameters Folder 
+        self.PathToFigFld        = '/Figures/'                                                                                    # Path To Training Figures Folder 
+        self.PathToDataFld       = '/Data/'                                                                                       # Path To Training Data Folder 
+        self.PathToParamsFld     = '/Params/'                                                                                     # Path To Training Parameters Folder 
         self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_HighAccuracy_AmalInel/O3_UMN.hdf5'
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
 

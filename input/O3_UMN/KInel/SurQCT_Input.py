@@ -53,7 +53,7 @@ class inputdata(object):
         self.ApproxModel         = 'DotNet'
         self.NormalizeInput      = True
         self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
-        self.ActFun              = [['tanh', 'tanh', 'tanh'], ['tanh', 'tanh', 'linear']]
+        self.ActFun              = [['tanh', 'tanh', 'sigmoid'], ['tanh', 'tanh', 'linear']]
         self.DropOutRate         = 1.e-3
         # self.ApproxModel         = 'SumNet'
         # self.NNLayers            = [np.array([32, 32, 32]), np.array([32, 32, 32]), np.array([32, 1])]
@@ -62,8 +62,8 @@ class inputdata(object):
 
         #=======================================================================================================================================
         ### Training Quanties
-        self.xVarsVec_i          = ['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro'] #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
-        self.xVarsVec_Delta      = ['EVib','ERotR','rMin','rMax','VMin','VMax','Tau','ri','ro'] #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
+        self.xVarsVec_i          = ['EVib','ERot','VMin','VMax','rMin','rMax','ri','ro','Tau'] #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
+        self.xVarsVec_Delta      = ['EVib','ERot','EVibR','ERotR','ri','ro','Tau']             #['EVib','ERot','VMin','VMax','Tau','ri','ro','vqn','jqn']
         self.OtherVar            = '_Delta'
         self.NSamplesNoise       = 0
         self.RandDataFlg         = True                                                                      # Randomize Training Data 

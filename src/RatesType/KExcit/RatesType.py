@@ -20,6 +20,8 @@ def generate_trainingdata(InputData):
 
     from Reading  import read_levelsdata, read_diatdata, sample_initiallevels, read_sampledinitiallevels
 
+
+    #===================================================================================================================================
     OtherVar           = InputData.OtherVar
     xVarsVec_i         = InputData.xVarsVec_i
     xVarsVec_Delta     = InputData.xVarsVec_Delta
@@ -484,6 +486,7 @@ def generate_predictiondata(SurQCTFldr, PathToLevelsFile, TTran, KineticFldr):
 
     InputData.MultFact         = 1.e+09
     MinValue                   = 1.e-16
+
     #===================================================================================================================================
 
 

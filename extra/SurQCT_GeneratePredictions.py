@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     SurQCTFldr        = '/home/venturi/WORKSPACE/SurQCT/surqct/'
 
-    TTranVec          = [10000.0] #[2500.0, 5000.0, 6000.0, 8000.0, 12000.0, 14000.0, 15000.0, 20000.0]
+    TTranVec          = [2500.0, 5000.0, 6000.0, 8000.0, 12000.0, 14000.0, 15000.0, 20000.0]
 
     PathToLevelsFile  = ['/home/venturi/WORKSPACE/Air_Database/Run_0D/database/levels/O2_nd.csv']
     KineticFldr       = '/home/venturi/WORKSPACE/Air_Database/Run_0D_surQCT/database/kinetics/O3_UMN_nondim/'

@@ -43,6 +43,10 @@ def read_diatdata(DataFile, Molecule, TTranVecTrain, TTranVecTest):
     xMat['VMax']   = ( xMat['VMax'].to_numpy() - np.amin(xMat['VMax'].to_numpy()) ) * 27.211399
     xMat['VMin']   = ( xMat['VMin'].to_numpy() - np.amin(xMat['VMax'].to_numpy()) ) * 27.211399
 
+    EVib, ERot     = compute_vibenergy(xMat['EInt'].to_numpy(), xMat['vqn'].to_numpy(int), xMat['jqn'].to_numpy(int))
+    xMat['EVib']   = EVib
+    xMat['ERot']   = ERot
+
     xMat['g']      = compute_degeneracy(xMat['jqn'].to_numpy(int), Molecule) 
 
     kB = 8.617333262e-5
@@ -56,6 +60,21 @@ def read_diatdata(DataFile, Molecule, TTranVecTrain, TTranVecTest):
         xMat[Str] = xMat['g'].to_numpy() * np.exp( - xMat['EInt'].to_numpy() / (kB*TTran) )
 
     return xMat
+
+
+def compute_vibenergy(eint, vqn, jqn):
+    NLevels = len(eint)
+    EVib    = np.zeros((NLevels,1))
+    ERot    = np.zeros((NLevels,1))
+    ETemp   = np.zeros((np.amax(vqn)+1,1))
+    for iLevel in range(NLevels):
+        if (jqn[iLevel] == 0):
+            EVib[iLevel]       = eint[iLevel]
+            ETemp[vqn[iLevel]] = eint[iLevel]
+        else:
+            EVib[iLevel] = ETemp[vqn[iLevel]]
+            ERot[iLevel] = eint[iLevel] - EVib[iLevel]
+    return EVib, ERot
 
 
 def compute_degeneracy(jqn, Molecule):

@@ -59,12 +59,15 @@ def read_diatdata(DataFile, Molecule, TTranVecTrain, TTranVecTest):
 
 
 def compute_degeneracy(jqn, Molecule):
-
     if (Molecule == 'N2'):
-        if (jqn % 2 == 0):
-            g = 6*(2*jqn + 1)
-        else:
-            g = 3*(2*jqn + 1)
+        # g = (2*jqn + 1)
+        NLevels = len(jqn)
+        g       = np.zeros(NLevels)
+        for iLevel in range(NLevels):
+            if (jqn[iLevel] % 2 == 0):
+                g[iLevel] = 6*(2*jqn[iLevel] + 1)
+            else:
+                g[iLevel] = 3*(2*jqn[iLevel] + 1)
     elif (Molecule == 'O2'):
         g = (2*jqn + 1)
     elif (Molecule == 'NO'):

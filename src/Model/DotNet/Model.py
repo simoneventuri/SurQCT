@@ -7,6 +7,7 @@ import numpy                                  as np
 from tensorflow                           import keras
 from tensorflow                           import train
 from tensorflow.keras                     import layers
+from tensorflow.keras                     import initializers
 from tensorflow.keras.layers.experimental import preprocessing
 from tensorflow.keras                     import regularizers
 from tensorflow.keras                     import optimizers
@@ -29,23 +30,6 @@ from customCallbacks import customReduceLROnPlateau
 
 
 #=======================================================================================================================================
-class BiasLayer(layers.Layer):
-    def __init__(self, *args, **kwargs):
-        super(BiasLayer, self).__init__(*args, **kwargs)
-
-    def build(self, input_shape):
-        self.bias = self.add_weight('bias',
-                                    shape=input_shape[1:],
-                                    initializer='zeros',
-                                    trainable=True)
-    def call(self, x):
-        return x + self.bias
-
-#=======================================================================================================================================
-
-
-
-#=======================================================================================================================================
 from datetime import datetime
 
 def get_curr_time():
@@ -59,7 +43,51 @@ def get_start_time():
 
 
 #=======================================================================================================================================
-def NNBranch(InputData, normalized, NNName, Idx):
+@tf.keras.utils.register_keras_serializable(package='Custom', name='l1')
+class L1Regularizer(tf.keras.regularizers.Regularizer):
+  def __init__(self, l1, x0):
+    self.l1 = l1
+    self.x0 = x0
+
+  def __call__(self, x):
+    return self.l1 * tf.math.reduce_sum(tf.math.abs(x - self.x0))
+
+  def get_config(self):
+    return {'l1': float(self.l1)}
+
+
+@tf.keras.utils.register_keras_serializable(package='Custom', name='l2')
+class L2Regularizer(tf.keras.regularizers.Regularizer):
+  def __init__(self, l2, x0):
+    self.l2 = l2
+    self.x0 = x0
+
+  def __call__(self, x):
+    return self.l2 * tf.math.reduce_sum(tf.math.square(x - self.x0))
+
+  def get_config(self):
+    return {'l2': float(self.l2)}
+
+
+@tf.keras.utils.register_keras_serializable(package='Custom', name='l1l2')
+class L1L2Regularizer(tf.keras.regularizers.Regularizer):
+  def __init__(self, l1, l2, x0):
+    self.l1 = l1
+    self.l2 = l2
+    self.x0 = x0
+
+  def __call__(self, x):
+    Diff = x - self.x0
+    return self.l1 * tf.math.reduce_sum(tf.math.abs(Diff)) + self.l2 * tf.math.reduce_sum(tf.math.square(Diff))
+
+  def get_config(self):
+    return {'l1l2': float(self.l2)}
+#=======================================================================================================================================
+
+
+
+#=======================================================================================================================================
+def NNBranch(InputData, normalized, NNName, Idx, NN_Transfer_Model):
 
     kW1      = InputData.WeightDecay[0]
     kW2      = InputData.WeightDecay[1]
@@ -73,19 +101,53 @@ def NNBranch(InputData, normalized, NNName, Idx):
         WeightsName = NNName + '_HL' + str(iLayer+1) 
         LayerName   = WeightsName + Mol 
 
-        hiddenVec.append(layers.Dense(units=NNLayers[iLayer],
-                                activation=ActFun[iLayer],
-                                use_bias=True,
-                                kernel_initializer='glorot_normal',
-                                bias_initializer='zeros',
-                                kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                name=LayerName)(hiddenVec[-1]))
+        if (InputData.TransferFlg):
+            x0     = NN_Transfer_Model.get_layer(LayerName).kernel.numpy()
+            b0     = NN_Transfer_Model.get_layer(LayerName).bias.numpy()
+            WIni   = tf.keras.initializers.RandomNormal(mean=x0, stddev=1.e-10)
+            bIni   = tf.keras.initializers.RandomNormal(mean=b0, stddev=1.e-10)
+            WRegul = L1L2Regularizer(kW1, kW2, x0)
+            bRegul = L1L2Regularizer(kW1, kW2, b0)
+        else:
+            WIni   = 'glorot_normal'
+            bIni   = 'zeros'
+            WRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
+            bRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
+
+
+        hiddenVec.append(layers.Dense(units            = NNLayers[iLayer],
+                                    activation         = ActFun[iLayer],
+                                    use_bias           = True,
+                                    kernel_initializer = WIni,
+                                    bias_initializer   = bIni,
+                                    kernel_regularizer = WRegul,
+                                    bias_regularizer   = bRegul,
+                                    name               = LayerName)(hiddenVec[-1]))
         
         if (iLayer < NLayers-1):
             hiddenVec.append(layers.Dropout(InputData.DropOutRate, input_shape=(NNLayers[iLayer],))(hiddenVec[-1]))          
 
     return hiddenVec[-1]
+
+#=======================================================================================================================================
+
+
+
+
+#=======================================================================================================================================
+class BiasLayer(layers.Layer):
+    def __init__(self, b0):
+        super(BiasLayer, self).__init__(name='FinalScaling')
+        self.b0   = b0
+
+    def build(self, input_shape):
+        bIni      = tf.keras.initializers.constant(value=self.b0)
+        self.bias = self.add_weight('bias',
+                                    shape       = input_shape[1:],
+                                    initializer = bIni,
+                                    trainable   = True)
+    def call(self, x):
+        return x + self.bias
 
 #=======================================================================================================================================
 
@@ -140,6 +202,16 @@ class model:
         if (InputData.DefineModelIntFlg > 0):
             print('[SurQCT]:   Defining ML Model from Scratch')
 
+            if (InputData.TransferFlg): 
+                ModelFile         = InputData.TransferModelFld + '/MyModel/'
+                NN_Transfer_Model = keras.models.load_model(ModelFile)
+                MCFile            = InputData.TransferModelFld + '/Params/ModelCheckpoint/cp-{epoch:04d}.ckpt'
+                checkpoint_dir    = os.path.dirname(MCFile)
+                latest            = train.latest_checkpoint(checkpoint_dir)
+                NN_Transfer_Model.load_weights(latest)
+            else:
+                NN_Transfer_Model = None
+
             #---------------------------------------------------------------------------------------------------------------------------
             xDim_i              = len(VarsVec_i)
             xDim_Delta          = len(VarsVec_Delta)
@@ -148,23 +220,33 @@ class model:
 
             ### Normalizer Layers
             if (InputData.NormalizeInput):
-                normalizerI         = preprocessing.Normalization()
-                self.xTrainI        = self.xTrain[ChooseVarsI]
-                normalizerI.adapt(np.array(self.xTrainI))
-                InputI              = normalizerI(inputI)
+                if (InputData.TransferFlg): 
+                    Mean             = NN_Transfer_Model.get_layer('normalization').mean.numpy()
+                    Variance         = NN_Transfer_Model.get_layer('normalization').variance.numpy()
+                    normalizerI      = preprocessing.Normalization(mean=Mean, variance=Variance)
+                else:
+                    normalizerI      = preprocessing.Normalization()
+                    self.xTrainI         = self.xTrain[ChooseVarsI]
+                    normalizerI.adapt(np.array(self.xTrainI))
+                InputI               = normalizerI(inputI)
                 #
-                normalizerDeltaI    = preprocessing.Normalization()
-                self.xTrainDataI    = self.xTrain[ChooseVarsData]
-                normalizerDeltaI.adapt(np.array(self.xTrainDataI))
-                InputDeltaI         = normalizerDeltaI(inputDeltaI)
+                if (InputData.TransferFlg): 
+                    Mean             = NN_Transfer_Model.get_layer('normalization_1').mean.numpy()
+                    Variance         = NN_Transfer_Model.get_layer('normalization_1').variance.numpy()
+                    normalizerDeltaI = preprocessing.Normalization(mean=Mean, variance=Variance)
+                else:
+                    normalizerDeltaI = preprocessing.Normalization()
+                    self.xTrainDataI     = self.xTrain[ChooseVarsData]
+                    normalizerDeltaI.adapt(np.array(self.xTrainDataI))
+                InputDeltaI          = normalizerDeltaI(inputDeltaI)
             else:
-                InputI              = inputI
-                InputDeltaI         = inputDeltaI
+                InputI               = inputI
+                InputDeltaI          = inputDeltaI
 
             ### NN Branches
-            outputI         = NNBranch(InputData, InputI,      'Branch', 0)
+            outputI         = NNBranch(InputData, InputI,      'Branch', 0, NN_Transfer_Model)
             #
-            outputDelta     = NNBranch(InputData, InputDeltaI, 'Trunk',  1)
+            outputDelta     = NNBranch(InputData, InputDeltaI, 'Trunk',  1, NN_Transfer_Model)
 
             ### Final Dot Product
             output_P        = layers.Dot(axes=1)([outputI, outputDelta])
@@ -175,8 +257,11 @@ class model:
             #                                use_bias=True,
             #                                kernel_initializer='glorot_normal',
             #                                bias_initializer='zeros',
-            #                                name='FinalScaling')(output_1)   
-            output_Final    = BiasLayer(name='FinalScaling')(output_P)
+            #                                name='FinalScaling')(output_1) 
+            b0 = 0
+            if (InputData.TransferFlg): 
+                b0 = NN_Transfer_Model.get_layer('FinalScaling').bias.numpy()[0]
+            output_Final    = BiasLayer(b0=b0)(output_P)
 
             # ### Adding Noise
             # Meann           = -34.5
@@ -265,6 +350,13 @@ class model:
             self.Model.summary()
             #-------------------------------------------------------------------------------------------------------------------------------
 
+            if (InputData.TransferFlg):
+                print('\n normalization,   Mean    : ', self.Model.get_layer('normalization').mean.numpy() )
+                print('\n normalization,   Variance: ', self.Model.get_layer('normalization').variance.numpy() )
+                print('\n normalization_1, Mean    : ', self.Model.get_layer('normalization_1').mean.numpy() )
+                print('\n normalization_1, Variance: ', self.Model.get_layer('normalization_1').variance.numpy() )
+                
+                print('\n FinalScaling,    Bias:     ', self.Model.get_layer('FinalScaling').bias.numpy() )
         else:
             
             #---------------------------------------------------------------------------------------------------------------------------
@@ -331,6 +423,4 @@ class model:
         self.Model.load_weights(latest)
 
     #===================================================================================================================================
-
-
 

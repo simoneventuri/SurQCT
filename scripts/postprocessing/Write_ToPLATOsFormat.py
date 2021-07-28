@@ -205,7 +205,7 @@ except OSError as e:
 
 
 for TTran in TTranVec:
-
+	print('[SurQCT]:    TTran = ', TTran)
 
 
 	### Opening Files

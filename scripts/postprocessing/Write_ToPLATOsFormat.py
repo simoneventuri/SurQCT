@@ -1,0 +1,288 @@
+import time
+import os
+import shutil
+import sys
+import h5py
+import tensorflow                             as tf
+import numpy                                  as np
+import seaborn                                as sns
+import pandas                                 as pd
+import matplotlib.pyplot                      as plt
+import numpy.random                           as random
+from sklearn.utils                        import shuffle
+from sklearn.model_selection              import train_test_split
+from tqdm                                 import tqdm
+from os                                   import path
+import pysftp                                 as sftp
+from matplotlib                 import pyplot as plt 
+
+print("\n======================================================================================================================================")
+print(" TensorFlow version: {}".format(tf.__version__))
+print(" Eager execution: {}".format(tf.executing_eagerly()))
+
+
+
+
+#=======================================================================================================================================
+def write_predictiondata(KineticFile, csvkinetics, iFlg, Molecules, Atoms, iLevel, jLevelVec, KVec):
+
+    if (iFlg == 0):
+        for i in range(len(jLevelVec)): 
+            ProcName = Molecules[0] + '(' + str(iLevel+1) + ')+' + Atoms[0] + '=' + Molecules[1] + '(' + str(jLevelVec[i]+1) + ')+' + Atoms[1]
+            Line     = ProcName + ':%.4e,+0.0000E+00,+0.0000E+00,5\n' % KVec[i]
+            csvkinetics.write(Line)
+
+    elif (iFlg == -1):
+        print('[SurQCT]:   Writing Kinetics in File: ' + KineticFile )
+        csvkinetics  = open(KineticFile, 'w')
+
+    elif (iFlg == -2):
+        print('[SurQCT]:   Closing Kinetics File: ' + KineticFile )
+        csvkinetics.close()
+
+
+    return csvkinetics
+
+#=======================================================================================================================================
+
+
+
+
+WORKSPACE_PATH      = os.environ['WORKSPACE_PATH']
+SurQCTFldr          = WORKSPACE_PATH + '/SurQCT/surqct/'
+
+RatesType           = 'KExcit'
+
+ExcitType           = 'KInel'
+NNRunIdx            = 10      
+# ExcitType           = 'KExch'
+# NNRunIdx            = 1      
+
+PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/' 
+
+TTranVec            = [10000.0]
+
+Molecules           = ['O2','O2']
+Atoms               = ['O','O']
+
+
+
+#===================================================================================================================================
+print("\n[SurQCT]: Loading Modules and Functions ...")
+
+sys.path.insert(0, SurQCTFldr  + '/src/Reading/')
+from Reading  import read_levelsdata, read_diatdata
+
+InputFld = PathToRunFld + '/Run_' + str(NNRunIdx) + '/'
+sys.path.insert(0, InputFld)
+#===================================================================================================================================
+
+
+
+#===================================================================================================================================
+print("\n[SurQCT]: Keep Loading Modules and Functions...")
+from SurQCT_Input import inputdata
+
+print("\n[SurQCT]: Initializing Input ...")
+InputData    = inputdata(WORKSPACE_PATH, SurQCTFldr)
+
+Prefix                    = 'Run_'
+InputData.NNRunIdx        = NNRunIdx
+InputData.PathToRunFld    = InputData.PathToRunFld+'/'+Prefix+str(InputData.NNRunIdx)
+InputData.PathToFigFld    = InputData.PathToRunFld+'/'+InputData.PathToFigFld
+InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
+InputData.PathToDataFld   = InputData.PathToRunFld+'/Data/'                                                               
+InputData.PathToParamsFld = InputData.PathToRunFld+'/Params/' 
+InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/O3_UMN_nondim/'
+
+# InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
+# InputData.Molecules       = ['N2','N2'] 
+# InputData.PathToLevelsFile= [InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_nd_ELog.csv',
+#                              InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_nd_ELog.csv']
+# InputData.PathToDiatFile  = [InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp',
+#                              InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp']   
+# #InputData.PathToGrouping  = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'   
+# #===================================================================================================================================
+
+
+
+#===================================================================================================================================
+print("\n[SurQCT]: Loading Final Modules ... ")
+
+sys.path.insert(0, SurQCTFldr  + '/src/Model/' + InputData.ApproxModel + '/')
+from Model import model
+
+
+InputData.DefineModelIntFlg = 0
+InputData.TrainIntFlg       = 0
+NN_KExcit                    = model(InputData, InputData.PathToRunFld, None, None)
+NN_KExcit.load_params(InputData.PathToParamsFld)
+#===================================================================================================================================
+
+
+
+#===================================================================================================================================
+OtherVar           = InputData.OtherVar
+xVarsVec_i         = InputData.xVarsVec_i + ['vqn','jqn']
+xVarsVec_Delta     = InputData.xVarsVec_Delta
+xVarsVec           = list(set(xVarsVec_i) | set(xVarsVec_Delta))
+print('[SurQCT]:   Reading Variables: ', xVarsVec)
+
+InputData.MultFact = 1.e+9
+MinValueTrain      = 1.e-16 * InputData.MultFact
+MinValueTest       = 1.e-16 * InputData.MultFact
+NoiseSD            = 1.e-13 * InputData.MultFact
+
+NMolecules         = len(InputData.PathToLevelsFile)
+
+InputData.iLevelsVecTest = list(np.array(InputData.iLevelsVecTest) - 1)
+
+
+
+#===================================================================================================================================
+### Reading Levels Info of Initial and Final Molecules
+LevelsData = []
+DiatData   = []
+NLevels    = []
+for iMol in range(NMolecules):
+
+    LevelsDataTemp = read_levelsdata(InputData.PathToLevelsFile[iMol], xVarsVec, '')
+    LevelsData.append(LevelsDataTemp)
+
+    DiatDataTemp = read_diatdata(InputData.PathToDiatFile[iMol], InputData.Molecules[iMol], np.array(TTranVec), np.array(TTranVec))
+    DiatData.append(DiatDataTemp)
+
+    NLevelsTemp    = LevelsDataTemp.shape[0]
+    NLevels.append(NLevelsTemp)
+
+
+
+# #=======================================================================================================================================
+# # Reading Excitation Rates Data 
+# def read_kexcitdata(InputData, PathToHDF5File, TTra, TInt, NProcTypes):
+#     print('[SurQCT]:       Reading HDF5 File from: ' + PathToHDF5File + ' for Excitation Rates at Temperature ' + str(int(TTra)) + 'K')
+
+#     HDF5Exist_Flg = path.exists(PathToHDF5File)
+#     if (HDF5Exist_Flg):
+#         f = h5py.File(PathToHDF5File, 'a')
+#     else:
+#         f = {'key': 'value'}
+
+#     TStr = 'T_' + str(int(TTra)) + '_' + str(int(TInt)) + '/Rates/'
+#     grp  = f[TStr]
+
+#     Data  = grp["Inel"]
+#     KInel = Data[...]
+
+#     KOther = []
+#     for iProc in range(2, NProcTypes):
+#         ExchStr    = "Exch_" + str(iProc-1)
+#         Data       = grp[ExchStr] 
+#         KOtherTemp = Data[...]
+#         KOther.append(KOtherTemp)
+
+#     f.close()   
+
+
+#     return KInel, KOther
+# #=======================================================================================================================================
+
+# KInelMat, KExchMatList = read_kexcitdata(InputData, InputData.PathToHDF5File, TTran, TTran, 3)
+
+# if (ExcitType == 'KInel'):
+#     KExcit = KInelMat
+# elif (ExcitType == 'KExch'):
+#     KExcit = KExchMatList[0]
+# else:
+#     KExcit = KInelMat + KExchMatList[0]
+
+
+
+try:
+    os.makedirs(InputData.KineticFldr)
+except OSError as e:
+    pass
+
+
+for TTran in TTranVec:
+
+
+
+	### Opening Files
+	PathToKineticFldr = InputData.KineticFldr + '/' + ExcitType + '_Run' + str(InputData.NNRunIdx) + '/T' + str(int(TTran)) + 'K'
+	try:
+	    os.makedirs(PathToKineticFldr)
+	except OSError as e:
+	    pass
+
+	if(ExcitType == 'KInel'):   
+	    KineticFile_KInel = PathToKineticFldr + '/Inel.dat'
+	    csvkinetics_KInel = write_predictiondata(KineticFile_KInel, None, -1, Molecules, Atoms, None, None, None)
+	elif(ExcitType == 'KExch'):   
+	    KineticFile_KExch = PathToKineticFldr + '/Exch_Type1.dat'
+	    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, None, -1, Molecules, Atoms, None, None, None)
+
+
+
+	### Loop on Initial States
+	Str = 'q_'+str(int(TTran))
+	for iIdx in tqdm(range(NLevels[0]), desc='[SurQCT]:     Generating Inelastic and Exchange Rate Matrixes'):
+	    time.sleep(0.001)
+	    
+	    if (InputData.ExoEndoFlg):
+	        jIdxVec           = [jIdx for jIdx in np.arange(NLevels[1]) if (DiatData[1]['EInt'].to_numpy()[jIdx] < DiatData[0]['EInt'].to_numpy()[iIdx])]
+	    else:
+	        jIdxVec           = [jIdx for jIdx in np.arange(NLevels[1]) if (DiatData[1][Str].to_numpy()[jIdx]    > DiatData[0][Str].to_numpy()[iIdx])]
+	    jNLevels              = len(jIdxVec)
+	    
+	    ### FWD Rates
+	    iiIdxVec              = [iIdx]*jNLevels
+	    
+	    TTranVec              = np.ones((jNLevels))*TTran
+	    TTranDataTemp         = pd.DataFrame({'TTran': TTranVec})
+	    TTranDataTemp.index   = jIdxVec
+
+	    
+	    iLevelsDataTemp       = LevelsData[0].iloc[iiIdxVec,:].copy()
+	    iLevelsDataTemp.index = jIdxVec
+
+	    jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()        
+	    if (OtherVar == '_Delta'):
+	        jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
+	    else:
+	        jLevelsDataTemp   = jLevelsDataTemp
+	    jLevelsDataTemp.index = jIdxVec
+	    
+	    kLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy()        
+	    kLevelsDataTemp.index = jIdxVec
+
+	    
+	    iLevelsData           = pd.concat([iLevelsDataTemp[xVarsVec_i], TTranDataTemp], axis=1)
+	    iLevelsData.columns   = [(VarName + '_i') for VarName in iLevelsData.columns]
+	    
+	    jLevelsData           = pd.concat([jLevelsDataTemp[xVarsVec_Delta], TTranDataTemp], axis=1)
+	    jLevelsData.columns   = [(VarName + OtherVar) for VarName in jLevelsData.columns]
+
+	    kLevelsData           = pd.concat([kLevelsDataTemp[xVarsVec_i], TTranDataTemp], axis=1)
+	    kLevelsData.columns   = [(VarName + '_j') for VarName in kLevelsData.columns]
+	    
+	    xTemp_FWD             = pd.concat([iLevelsData, jLevelsData, kLevelsData], axis=1)
+	    
+	    
+	    if (len(xTemp_FWD[NN_KExcit.xTrainingVar]) > 0):
+	        
+	        if(ExcitType == 'KInel'):   
+	            KInel_NN_FWD      = np.exp( NN_KExcit.Model.predict(xTemp_FWD[NN_KExcit.xTrainingVar]) ) / InputData.MultFact         
+	            csvkinetics_KInel = write_predictiondata(KineticFile_KInel, csvkinetics_KInel, 0, Molecules, Atoms, iIdx, jIdxVec, KInel_NN_FWD)
+	        
+	        elif(ExcitType == 'KExch'):      
+	            KExch_NN_FWD      = np.exp( NN_KExcit.Model.predict(xTemp_FWD[NN_KExcit.xTrainingVar]) ) / InputData.MultFact
+	            csvkinetics_KExch = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, 0, Molecules, Atoms, iIdx, jIdxVec, KExch_NN_FWD)
+
+	                 
+	if(ExcitType == 'KInel'): 
+	    csvkinetics_KInel = write_predictiondata(KineticFile_KInel, csvkinetics_KInel, -2, None, None, None, None, None)
+	elif(ExcitType == 'KExch'):
+	    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, csvkinetics_KExch, -2, None, None, None, None, None)
+
+#=======================================================================================================================================

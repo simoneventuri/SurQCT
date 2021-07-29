@@ -65,6 +65,8 @@ TTranVec            = [10000.0]
 Molecules           = ['O2','O2']
 Atoms               = ['O','O']
 
+0DRunIdx            = 1
+
 
 
 #===================================================================================================================================
@@ -93,7 +95,7 @@ InputData.PathToFigFld    = InputData.PathToRunFld+'/'+InputData.PathToFigFld
 InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
 InputData.PathToDataFld   = InputData.PathToRunFld+'/Data/'                                                               
 InputData.PathToParamsFld = InputData.PathToRunFld+'/Params/' 
-InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/O3_UMN_nondim/'
+InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/O3_UMN_nondim_Run'+str(0DRunIdx)+'/'
 
 # InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
 # InputData.Molecules       = ['N2','N2'] 
@@ -209,7 +211,7 @@ for TTran in TTranVec:
 
 
 	### Opening Files
-	PathToKineticFldr = InputData.KineticFldr + '/' + ExcitType + '_Run' + str(InputData.NNRunIdx) + '/T' + str(int(TTran)) + 'K'
+	PathToKineticFldr = InputData.KineticFldr + '/T' + str(int(TTran)) + 'K'
 	try:
 	    os.makedirs(PathToKineticFldr)
 	except OSError as e:

@@ -1,15 +1,5 @@
 #!/bin/bash
 #===============================================================================================================
-# Ex. of Call: bash RunMECVODE.sh O3 10000 $WORKSPACE_PATH/neqplasma_QCT/ME_CVODE $WORKSPACE_PATH/Mars_Database/Run_0D/database/ $WORKSPACE_PATH/Mars_Database/Run_0D/ 1 1 0 -1
-
-echo '------------------------------------------------------------------------------------------'
-echo ' CoarseAIR: Coarse-Grained Quasi-Classical Trajectories                                   '
-echo '------------------------------------------------------------------------------------------'
-echo ' '
-echo '------------------------------------------------------------------------------------------'
-echo '   PipeLine for Running External Codes                                                    '
-echo '------------------------------------------------------------------------------------------'
-echo ' '
 
 # source ~/.bashrc
 # #module purge
@@ -17,9 +7,6 @@ echo ' '
 # COARSEAIR_release
 # #PLATONORECOMB_gnu_release
 # PLATO_gnu_release
-
-export InelNNTestnum=2
-export DissNNTestnum=0
 
 export System='O3_UMN'
 export FldrName='_nondim_Run1'
@@ -37,13 +24,10 @@ export InelFlg=1
 export ExchFlg1=1
 export ExchFlg2=0
 
-ExtCode_SH_DIR=${COARSEAIR_SOURCE_DIR}"/extra/ExtCode_PipeLine/"
-
 echo '------------------------------------------------------'
 echo '  Paths:'
 echo '------------------------------------------------------'
 echo '  $PLATO_LIB      directory = '${PLATO_LIB}
-echo '  ExtCode .sh     directory = '${ExtCode_SH_DIR}
 echo '  MeCvode install directory = '${PathToMECVODEFldr}
 echo '  MeCvode Dtb     directory = '${PathToDtbFldr}
 echo '  MeCvode running directory = '${PathToRunFldr}
@@ -64,7 +48,7 @@ echo ' '
 
 
 function Load_Initialize_0D() {
-  source ${ExtCode_SH_DIR}/Initialize_0D_Database_Function_ForSurQCT.sh
+  source ./Initialize_0D_Database_Function_ForSurQCT.sh
   Initialize_0D_Database
 }
 
@@ -77,7 +61,7 @@ function Call_MeCvode() {
   mkdir -p ./${OutputFldr}
   cd ./${OutputFldr} 
 
-  export ExFldr=${PathToMECVODEFldr}/Generic_surQCT/
+  export ExFldr=${PathToMECVODEFldr}/Generic/
   echo "[RunMECVODE]: Copying MeCvode Executable from: "${ExFldr}/'exec/box_'
   scp ${ExFldr}'/exec/box_' ./
 

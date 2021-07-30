@@ -27,7 +27,7 @@ class inputdata(object):
         ### Paths
         self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
         self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
-        self.NNRunIdx            = 1                                                                      # Training Case Identification Number 
+        self.NNRunIdx            = 0                                                                      # Training Case Identification Number 
         self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/' + self.ExcitType + '/' # Path To Training Fldr
         self.TBCheckpointFldr    = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/TB/'
         self.PathToFigFld        = '/Figures/'                                                                                    # Path To Training Figures Folder 
@@ -62,7 +62,7 @@ class inputdata(object):
         self.RandDataFlg         = True                                                                      # Randomize Training Data 
         self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0])#np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0, 30000.0, 50000.0])])
         self.iLevelsIntFlg       = 4
-        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/46DPM_Sampled'
+        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/46DPM_Sampled/O2_Sampled_'
         self.ExoEndoFlg          = True
         #self.iLevelsSeedsVec     = [0, 4, 3, 1, 2]
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]

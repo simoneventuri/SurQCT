@@ -49,7 +49,7 @@ class inputdata(object):
         self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
         self.ActFun              = [['selu', 'selu', 'selu'], ['selu', 'relu', 'linear']]
         self.DropOutRate         = 1.e-3
-        self.FinalScalingFlg     = True
+        self.FinalLayerFlg       = True
 
         #=======================================================================================================================================
         ### Training Quanties

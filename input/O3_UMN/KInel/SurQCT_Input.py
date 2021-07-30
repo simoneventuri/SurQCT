@@ -36,8 +36,8 @@ class inputdata(object):
         self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_HighAccuracy/O3_UMN.hdf5'
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
         self.Molecules           = ['O2','O2'] 
-        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv',
-                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_nd.csv']
+        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/46DPM_Sampled/O2.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/46DPM_Sampled/O2.csv']
         self.PathToDiatFile      = [self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
                                     self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp']                               
         self.PathToGrouping      = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'  

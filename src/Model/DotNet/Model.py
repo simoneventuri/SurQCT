@@ -244,24 +244,35 @@ class model:
                 InputDeltaI          = inputDeltaI
 
             ### NN Branches
-            outputI         = NNBranch(InputData, InputI,      'Branch', 0, NN_Transfer_Model)
+            outputI        = NNBranch(InputData, InputI,      'Branch', 0, NN_Transfer_Model)
             #
-            outputDelta     = NNBranch(InputData, InputDeltaI, 'Trunk',  1, NN_Transfer_Model)
+            outputDelta    = NNBranch(InputData, InputDeltaI, 'Trunk',  1, NN_Transfer_Model)
 
             ### Final Dot Product
-            output_P        = layers.Dot(axes=1)([outputI, outputDelta])
+            output_P       = layers.Dot(axes=1)([outputI, outputDelta])
            
             ### Final Layer
-            # output_Final   = layers.Dense(units=1,
-            #                                activation='linear',
-            #                                use_bias=True,
-            #                                kernel_initializer='glorot_normal',
-            #                                bias_initializer='zeros',
-            #                                name='FinalScaling')(output_1) 
-            b0 = 0
-            if (InputData.TransferFlg): 
-                b0 = NN_Transfer_Model.get_layer('FinalScaling').bias.numpy()[0]
-            output_Final    = BiasLayer(b0=b0)(output_P)
+            LayerName      = 'FinalScaling'
+            if (InputData.FinalLayerFlg):
+                if (InputData.TransferFlg):
+                    x0     = NN_Transfer_Model.get_layer(LayerName).kernel.numpy()
+                    b0     = NN_Transfer_Model.get_layer(LayerName).bias.numpy()
+                    WIni   = tf.keras.initializers.RandomNormal(mean=x0, stddev=1.e-10)
+                    bIni   = tf.keras.initializers.RandomNormal(mean=b0, stddev=1.e-10)
+                else:
+                    WIni   = 'glorot_normal'
+                    bIni   = 'zeros'
+                output_Final   = layers.Dense(units              = 1,
+                                              activation         = 'linear',
+                                              use_bias           = True,
+                                              kernel_initializer = WIni,
+                                              bias_initializer   = bIni,
+                                              name               = 'FinalScaling')(output_P) 
+            else:
+                b0 = 0
+                if (InputData.TransferFlg): 
+                    b0 = NN_Transfer_Model.get_layer(LayerName).bias.numpy()[0]
+                output_Final    = BiasLayer(b0=b0)(output_P)
 
             # ### Adding Noise
             # Meann           = -34.5
@@ -273,8 +284,8 @@ class model:
 
 
             #---------------------------------------------------------------------------------------------------------------------------
-            #LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=250000, decay_rate=0.97, staircase=True)
-            LearningRate = InputData.LearningRate
+            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=200000, decay_rate=0.98, staircase=True)
+            #LearningRate = InputData.LearningRate
 
             MTD = InputData.Optimizer
             if (MTD == 'adadelta'):  # A SGD method based on adaptive learning rate
@@ -384,7 +395,7 @@ class model:
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         MCCallBack    = callbacks.ModelCheckpoint(filepath=MCFile, monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=0, mode='auto', save_freq='epoch', options=None)
-        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-2, cooldown=100, min_lr=1.e-8, verbose=1)
+        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-4, cooldown=0, min_lr=1.e-8, verbose=1)
         TBCallBack    = callbacks.TensorBoard(log_dir=TBCheckpointFldr, histogram_freq=0, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
         
         CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]

@@ -12,7 +12,6 @@ class inputdata(object):
         ### Case Name
         self.RatesType     = 'KExcit'
         self.ExcitType     = 'KInel'
-        self.SameMolecules = True
         
         #=======================================================================================================================================
         ### Execution Flags
@@ -36,29 +35,21 @@ class inputdata(object):
         self.PathToParamsFld     = '/Params/'                                                                                     # Path To Training Parameters Folder 
         self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_HighAccuracy_AmalInel/O3_UMN.hdf5'
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
-
         self.Molecules           = ['O2','O2'] 
-        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd_ELog.csv',
-                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd_ELog.csv']
+        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2_UMN_nd.csv']
         self.PathToDiatFile      = [self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
-                                    self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp']   
-                                                            
+                                    self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp']                               
         self.PathToGrouping      = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'   
 
         #=======================================================================================================================================
         ## NN Model Structure
-        # self.ApproxModel         = 'FNN'
-        # self.NNLayers            = np.array([32, 32, 32 ])
-        # self.ActFun              = ['sigmoid', 'sigmoid', 'sigmoid']
         self.ApproxModel         = 'DotNet'
         self.NormalizeInput      = True
         self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
         self.ActFun              = [['tanh', 'tanh', 'sigmoid'], ['tanh', 'tanh', 'linear']]
         self.DropOutRate         = 1.e-3
-        # self.ApproxModel         = 'SumNet'
-        # self.NNLayers            = [np.array([32, 32, 32]), np.array([32, 32, 32]), np.array([32, 1])]
-        # self.ActFun              = [['sigmoid', 'sigmoid', 'sigmoid'], ['sigmoid', 'sigmoid', 'sigmoid'], ['sigmoid', 'linear']]
-
+        self.FinalScalingFlg     = False
 
         #=======================================================================================================================================
         ### Training Quanties
@@ -77,7 +68,7 @@ class inputdata(object):
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]
         #self.NiLevelsSampled    = 100
 
-        self.NEpoch              = 50000                                                                      # Number of Epoches
+        self.NEpoch              = 50000                                                                     # Number of Epoches
         self.MiniBatchSize       = 64
         self.LossFunction        = 'mean_absolute_percentage_error'#'mean_squared_logarithmic_error'
         self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate

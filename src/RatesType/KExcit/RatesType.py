@@ -37,6 +37,8 @@ def generate_trainingdata(InputData):
 
     InputData.iLevelsVecTest = list(np.array(InputData.iLevelsVecTest) - 1)
 
+    ReconstructExothFlg = True
+
 
     #===================================================================================================================================
     ### Reading Levels Info of Initial and Final Molecules
@@ -141,34 +143,35 @@ def generate_trainingdata(InputData):
             jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
 
 
+            if (ReconstructExothFlg):
+    
+                jNLevels              = len(jIdxVecNo)
+                kIdxVec               = jIdxVecNo
+                jIdxVec               = [iIdx]*jNLevels
 
-            jNLevels              = len(jIdxVecNo)
-            kIdxVec               = jIdxVecNo
-            jIdxVec               = [iIdx]*jNLevels
+                KExcitReconstr        = KMatoI[iIdx, jIdxVecNo] * DiatData[1][Str].to_numpy()[iIdx] / DiatData[0][Str].to_numpy()[jIdxVecNo]
 
-            KExcitReconstr        = KMatoI[iIdx, jIdxVecNo] * DiatData[1][Str].to_numpy()[iIdx] / DiatData[0][Str].to_numpy()[jIdxVecNo]
+                ### Appending Vertically
+                iIdxData              = iIdxData.append(pd.DataFrame({'Idx_i': kIdxVec}))
+                jIdxData              = jIdxData.append(pd.DataFrame({'Idx_j': jIdxVec}))
 
-            ### Appending Vertically
-            iIdxData              = iIdxData.append(pd.DataFrame({'Idx_i': kIdxVec}))
-            jIdxData              = jIdxData.append(pd.DataFrame({'Idx_j': jIdxVec}))
+                TTran                 = np.ones((jNLevels)) * TTranVec[iT]
+                TTranData             = TTranData.append(pd.DataFrame({'TTran': TTran}))
 
-            TTran                 = np.ones((jNLevels)) * TTranVec[iT]
-            TTranData             = TTranData.append(pd.DataFrame({'TTran': TTran}))
+                KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KExcitReconstr}))
+                
+                iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
+                iLevelsDataTemp.index = np.arange(len(TTran))
+                iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
 
-            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KExcitReconstr}))
-            
-            iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
-            iLevelsDataTemp.index = np.arange(len(TTran))
-            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
-
-            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy() 
-            jLevelsDataTemp       = jLevelsDataTemp   
-            jLevelsDataTemp.index = np.arange(len(TTran))
-            if (OtherVar == '_Delta'):
-                jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
-            else:
-                jLevelsDataTemp   = jLevelsDataTemp
-            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
+                jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy() 
+                jLevelsDataTemp       = jLevelsDataTemp   
+                jLevelsDataTemp.index = np.arange(len(TTran))
+                if (OtherVar == '_Delta'):
+                    jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
+                else:
+                    jLevelsDataTemp   = jLevelsDataTemp
+                jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
 
 
         print('[SurQCT]:       Now the Data Matrix contains ', len(KExcitData), ' Data Points')

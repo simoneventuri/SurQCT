@@ -132,6 +132,10 @@ def NNBranch(InputData, normalized, NNName, Idx, NN_Transfer_Model):
         if (iLayer < NLayers-1):
             hiddenVec.append(layers.Dropout(InputData.DropOutRate, input_shape=(NNLayers[iLayer],))(hiddenVec[-1]))          
 
+        if hasattr(InputData, 'SoftmaxFlg'):
+            if (NNName != 'Trunk') and (InputData.SoftmaxFlg):
+                hiddenVec.append(layers.Softmax()(hiddenVec[-1]))
+
     return hiddenVec[-1]
 
 #=======================================================================================================================================
@@ -277,14 +281,15 @@ class model:
                 b0 = 0
                 if (InputData.TransferFlg): 
                     b0 = NN_Transfer_Model.get_layer(LayerName).bias.numpy()[0]
-                output_Final    = BiasLayer(b0=b0)(output_P)
+                output_Final = BiasLayer(b0=b0)(output_P)
+
 
             # ### Adding Noise
             # Meann           = -34.5
             # StdDevv         = 0.5
             # output_Final    = AdditiveGaussNoise(Meann, StdDevv)(output_2)
 
-            self.Model      = keras.Model(inputs=[input_], outputs=[output_Final] )
+            self.Model = keras.Model(inputs=[input_], outputs=[output_Final] )
             #---------------------------------------------------------------------------------------------------------------------------
 
 

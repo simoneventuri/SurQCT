@@ -11,7 +11,7 @@ class inputdata(object):
         #=======================================================================================================================================
         ### Case Name
         self.RatesType = 'KExcit'
-        self.ExcitType = 'KExch'
+        self.ExcitType = 'KInel'
 
         #=======================================================================================================================================
         ### Execution Flags
@@ -25,9 +25,9 @@ class inputdata(object):
 
         #=======================================================================================================================================
         ### Paths
-        self.WORKSPACE_PATH      = WORKSPACE_PATH                                                                                 # os.getenv('WORKSPACE_PATH')      
-        self.SurQCTFldr          = SurQCTFldr                                                                                     # $WORKSPACE_PATH/ProPDE/
-        self.NNRunIdx            = 0                                                                                              # Training Case Identification Number 
+        self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
+        self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
+        self.NNRunIdx            = 0                                                                      # Training Case Identification Number 
         self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/' + self.ExcitType + '/' # Path To Training Fldr
         self.TBCheckpointFldr    = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/TB/'
         self.PathToFigFld        = '/Figures/'                                                                                    # Path To Training Figures Folder 
@@ -46,8 +46,8 @@ class inputdata(object):
         ## NN Model Structure
         self.ApproxModel         = 'DotNet'
         self.NormalizeInput      = True
-        self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
-        self.ActFun              = [['tanh', 'tanh', 'sigmoid'], ['tanh', 'tanh', 'linear']]
+        self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64, 64])]
+        self.ActFun              = [['tanh', 'tanh', 'sigmoid'], ['tanh', 'tanh', 'tanh', 'linear']]
         self.DropOutRate         = 1.e-3
         self.FinalLayerFlg       = True
 
@@ -68,13 +68,13 @@ class inputdata(object):
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]
         #self.NiLevelsSampled    = 100
 
-        self.NEpoch              = 20000                                                                     # Number of Epoches
+        self.NEpoch              = 100000                                                                     # Number of Epoches
         self.MiniBatchSize       = 64
         self.LossFunction        = 'mean_absolute_percentage_error'#'mean_squared_logarithmic_error'
         self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
-        self.WeightDecay         = np.array([1.e-5, 1.e-5], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
+        self.WeightDecay         = np.array([1.e-4, 1.e-6], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
         self.ImpThold            = 1.e-4   
         self.NPatience           = 300 
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)
@@ -82,6 +82,6 @@ class inputdata(object):
         #=======================================================================================================================================
         ### Testing Quantities
         self.TestPerc            = 0.0                                                                       # Percentage of Overall Data to Be Used for Testing (e.g., = 20.0 => 20%)
-        self.TTranVecTest        = np.array([10000.0]) #np.array([1500.0, 2500.0, 5000.0, 6000.0, 8000.0, 10000.0, 12000.0, 14000.0, 15000.0, 20000.0])
+        self.TTranVecTest        = np.array([6000.0, 10000.0]) #np.array([1500.0, 2500.0, 5000.0, 6000.0, 8000.0, 10000.0, 12000.0, 14000.0, 15000.0, 20000.0])
         self.iLevelsVecTest      = [4580, 4581, 6058, 6097, 6105, 6108, 6111]#[500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000]
         self.TTranVecExtra       = np.array([300.0, 50000.0])

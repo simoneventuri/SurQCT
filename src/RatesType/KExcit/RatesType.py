@@ -31,7 +31,7 @@ def generate_trainingdata(InputData):
     InputData.MultFact = 1.e+09
     MinValueTrain      = 1.e-16 * InputData.MultFact
     MinValueTest       = 1.e-16 * InputData.MultFact
-    NoiseSD            = 1.e-13 * InputData.MultFact
+    NoiseSD            = 1.e-15 * InputData.MultFact
 
     NMolecules         = len(InputData.PathToLevelsFile)
 
@@ -106,12 +106,17 @@ def generate_trainingdata(InputData):
 
             ### Selecting only Final States with EXOTHERMIC KExit > MinValueTrain 
             if (InputData.ExoEndoFlg):
-                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] < DiatData[0]['EInt'].to_numpy()[iIdx])]
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] <= DiatData[0]['EInt'].to_numpy()[iIdx])]
+                jIdxVecNo         = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] >  DiatData[0]['EInt'].to_numpy()[iIdx])]
             else:
-                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    > DiatData[0][Str].to_numpy()[iIdx])]
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >= DiatData[0][Str].to_numpy()[iIdx])]
+                jIdxVecNo         = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >  DiatData[0][Str].to_numpy()[iIdx])]
+            
+
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
-            
+
+            KExcit                = KMatoI[iIdx, jIdxVec]
 
             ### Appending Vertically
             iIdxData              = iIdxData.append(pd.DataFrame({'Idx_i': kIdxVec}))
@@ -120,7 +125,7 @@ def generate_trainingdata(InputData):
             TTran                 = np.ones((jNLevels)) * TTranVec[iT]
             TTranData             = TTranData.append(pd.DataFrame({'TTran': TTran}))
 
-            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KMatoI[iIdx, jIdxVec]}))
+            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KExcit}))
             
             iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
             iLevelsDataTemp.index = np.arange(len(TTran))
@@ -134,6 +139,37 @@ def generate_trainingdata(InputData):
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
             jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
+
+
+
+            jNLevels              = len(jIdxVecNo)
+            kIdxVec               = jIdxVecNo
+            jIdxVec               = [iIdx]*jNLevels
+
+            KExcitReconstr        = KMatoI[iIdx, jIdxVecNo] * DiatData[1][Str].to_numpy()[iIdx] / DiatData[0][Str].to_numpy()[jIdxVecNo]
+
+            ### Appending Vertically
+            iIdxData              = iIdxData.append(pd.DataFrame({'Idx_i': kIdxVec}))
+            jIdxData              = jIdxData.append(pd.DataFrame({'Idx_j': jIdxVec}))
+
+            TTran                 = np.ones((jNLevels)) * TTranVec[iT]
+            TTranData             = TTranData.append(pd.DataFrame({'TTran': TTran}))
+
+            KExcitData            = KExcitData.append(pd.DataFrame({'KExcit': KExcitReconstr}))
+            
+            iLevelsDataTemp       = LevelsData[0].iloc[kIdxVec,:].copy()
+            iLevelsDataTemp.index = np.arange(len(TTran))
+            iLevelsData           = iLevelsData.append(iLevelsDataTemp[xVarsVec_i])
+
+            jLevelsDataTemp       = LevelsData[1].iloc[jIdxVec,:].copy() 
+            jLevelsDataTemp       = jLevelsDataTemp   
+            jLevelsDataTemp.index = np.arange(len(TTran))
+            if (OtherVar == '_Delta'):
+                jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
+            else:
+                jLevelsDataTemp   = jLevelsDataTemp
+            jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
+
 
         print('[SurQCT]:       Now the Data Matrix contains ', len(KExcitData), ' Data Points')
 
@@ -155,7 +191,8 @@ def generate_trainingdata(InputData):
     DataSet             = pd.concat([DataSet, KExcitData], axis=1)
     DataSet             = pd.concat([DataSet, iIdxData],   axis=1)
     DataSet             = pd.concat([DataSet, jIdxData],   axis=1)
- 
+    
+    DataSet.to_csv('./Data.csv', index=False)
 
     ### Splitting DataSet in Training, Validation
     # TrainData = DataSet.sample(frac=(1.0-InputData.TestPerc/100.0), random_state=3)
@@ -231,9 +268,9 @@ def generate_trainingdata(InputData):
         iIdxVec = InputData.iLevelsVecTest
         for iIdx in iIdxVec:
             if (InputData.ExoEndoFlg):
-                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] < DiatData[0]['EInt'].to_numpy()[iIdx])]
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] <= DiatData[0]['EInt'].to_numpy()[iIdx])]
             else:
-                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    > DiatData[0][Str].to_numpy()[iIdx])]
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >= DiatData[0][Str].to_numpy()[iIdx])]
             jNLevels              = len(jIdxVec)
             kIdxVec               = [iIdx]*jNLevels
     

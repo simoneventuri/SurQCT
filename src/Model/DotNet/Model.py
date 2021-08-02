@@ -107,13 +107,18 @@ def NNBranch(InputData, normalized, NNName, Idx, NN_Transfer_Model):
             WIni   = tf.keras.initializers.RandomNormal(mean=x0, stddev=1.e-10)
             bIni   = tf.keras.initializers.RandomNormal(mean=b0, stddev=1.e-10)
             WRegul = L1L2Regularizer(kW1, kW2, x0)
-            bRegul = L1L2Regularizer(kW1, kW2, b0)
+            if (NNName != 'Trunk'):
+                bRegul = L1L2Regularizer(kW1, kW2, b0)
+            else:
+                bRegul = None
         else:
             WIni   = 'glorot_normal'
             bIni   = 'zeros'
             WRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
+            # if (NNName != 'Trunk'):
             bRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
-
+            # else:
+            #     bRegul = None
 
         hiddenVec.append(layers.Dense(units            = NNLayers[iLayer],
                                     activation         = ActFun[iLayer],

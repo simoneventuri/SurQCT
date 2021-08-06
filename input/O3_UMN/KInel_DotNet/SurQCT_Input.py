@@ -47,7 +47,7 @@ class inputdata(object):
         self.ApproxModel         = 'DotNet'
         self.NormalizeInput      = True
         self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64, 64])]
-        self.ActFun              = [['relu', 'relu', 'relu'], ['tanh', 'tanh', 'tanh', 'linear']]
+        self.ActFun              = [['selu', 'selu', 'selu'], ['tanh', 'tanh', 'tanh', 'linear']]
         self.DropOutRate         = 1.e-3
         self.SoftmaxFlg          = True
         self.FinalLayerFlg       = True
@@ -75,7 +75,7 @@ class inputdata(object):
         self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
-        self.WeightDecay         = np.array([1.e-4, 1.e-6], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
+        self.WeightDecay         = np.array([1.e-4, 1.e-10], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
         self.ImpThold            = 1.e-4   
         self.NPatience           = 300 
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)

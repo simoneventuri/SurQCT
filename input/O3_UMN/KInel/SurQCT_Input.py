@@ -27,7 +27,7 @@ class inputdata(object):
         ### Paths
         self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
         self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
-        self.NNRunIdx            = 0                                                                      # Training Case Identification Number 
+        self.NNRunIdx            = 20                                                                      # Training Case Identification Number 
         self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/' + self.ExcitType + '/' # Path To Training Fldr
         self.TBCheckpointFldr    = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/TB/'
         self.PathToFigFld        = '/Figures/'                                                                                    # Path To Training Figures Folder 
@@ -36,8 +36,8 @@ class inputdata(object):
         self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_HighAccuracy/O3_UMN.hdf5'
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
         self.Molecules           = ['O2','O2'] 
-        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/46DPM_Sampled/O2_LogELogR.csv',
-                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/46DPM_Sampled/O2_LogELogR.csv']
+        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/46DPM_Sampled/O2_exch.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/46DPM_Sampled/O2_exch.csv']
         self.PathToDiatFile      = [self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
                                     self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp']                               
         self.PathToGrouping      = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'  
@@ -46,10 +46,10 @@ class inputdata(object):
         ## NN Model Structure
         self.ApproxModel         = 'DotNet'
         self.NormalizeInput      = True
-        self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64, 64])]
-        self.ActFun              = [['relu', 'relu', 'relu'], ['tanh', 'tanh', 'tanh', 'linear']]
+        self.NNLayers            = [np.array([64, 64, 64]), np.array([64, 64, 64])]
+        self.ActFun              = [['selu', 'selu', 'selu'], ['tanh', 'tanh', 'linear']]
         self.DropOutRate         = 1.e-3
-        self.SoftmaxFlg          = True
+        self.SoftmaxFlg          = False
         self.FinalLayerFlg       = True
 
         #=======================================================================================================================================
@@ -75,7 +75,7 @@ class inputdata(object):
         self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
-        self.WeightDecay         = np.array([1.e-4, 1.e-6], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
+        self.WeightDecay         = np.array([1.e-5, 1.e-4], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
         self.ImpThold            = 1.e-4   
         self.NPatience           = 300 
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)

@@ -7,17 +7,82 @@ import numpy                                  as np
 from tensorflow                           import keras
 from tensorflow                           import train
 from tensorflow.keras                     import layers
+from tensorflow.keras                     import initializers
 from tensorflow.keras.layers.experimental import preprocessing
 from tensorflow.keras                     import regularizers
 from tensorflow.keras                     import optimizers
 from tensorflow.keras                     import losses
 from tensorflow.keras                     import callbacks
+from tensorflow.python.ops                import array_ops
 from sklearn.model_selection              import train_test_split
 
 
 # from Plotting import plot_var
 # from Reading  import read_parameters_hdf5
 # from Saving   import save_parameters, save_parameters_hdf5, save_data
+
+WORKSPACE_PATH = os.environ['WORKSPACE_PATH']
+SurQCTFldr     = WORKSPACE_PATH + '/SurQCT/surqct/'
+
+sys.path.append(SurQCTFldr + 'src/Callbacks/')
+from customCallbacks import customReduceLROnPlateau
+
+
+
+#=======================================================================================================================================
+from datetime import datetime
+
+def get_curr_time():
+    return datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
+
+def get_start_time():
+    return get_curr_time()
+
+#=======================================================================================================================================
+
+
+#=======================================================================================================================================
+@tf.keras.utils.register_keras_serializable(package='Custom', name='l1')
+class L1Regularizer(tf.keras.regularizers.Regularizer):
+  def __init__(self, l1, x0):
+    self.l1 = l1
+    self.x0 = x0
+
+  def __call__(self, x):
+    return self.l1 * tf.math.reduce_sum(tf.math.abs(x - self.x0))
+
+  def get_config(self):
+    return {'l1': float(self.l1)}
+
+
+@tf.keras.utils.register_keras_serializable(package='Custom', name='l2')
+class L2Regularizer(tf.keras.regularizers.Regularizer):
+  def __init__(self, l2, x0):
+    self.l2 = l2
+    self.x0 = x0
+
+  def __call__(self, x):
+    return self.l2 * tf.math.reduce_sum(tf.math.square(x - self.x0))
+
+  def get_config(self):
+    return {'l2': float(self.l2)}
+
+
+@tf.keras.utils.register_keras_serializable(package='Custom', name='l1l2')
+class L1L2Regularizer(tf.keras.regularizers.Regularizer):
+  def __init__(self, l1, l2, x0):
+    self.l1 = l1
+    self.l2 = l2
+    self.x0 = x0
+
+  def __call__(self, x):
+    Diff = x - self.x0
+    return self.l1 * tf.math.reduce_sum(tf.math.abs(Diff)) + self.l2 * tf.math.reduce_sum(tf.math.square(Diff))
+
+  def get_config(self):
+    return {'l1l2': float(self.l2)}
+#=======================================================================================================================================
+
 
 
 #=======================================================================================================================================
@@ -26,15 +91,34 @@ class model:
     # Class Initialization
     def __init__(self, InputData, PathToRunFld, TrainData, ValidData):
 
-        #-------------------------------------------------------------------------------------------------------------------------------  
-        VarsVec           = InputData.xVarsVec + ['TTran']
-        ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec]
-        self.xTrainingVar = ChooseVarsI
+        #===================================================================================================================================
+        class AdditiveGaussNoise(layers.Layer):
+          def __init__(self, mean, stddev):
+            super(AdditiveGaussNoise, self).__init__()
+            self.mean   = mean
+            self.stddev = stddev
+
+          def build(self, input_shape):
+            self.input_shape_  = input_shape 
+            
+          def call(self, input):
+            return input + tf.random.normal(shape=array_ops.shape(input), mean=self.mean, stddev=self.stddev)
+
+        #===================================================================================================================================
+
+
+
+        #-------------------------------------------------------------------------------------------------------------------------------        
+        VarsVec_i         = InputData.xVarsVec_i + ['TTran']
+        ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec_i]
+        VarsVec_Delta     = InputData.xVarsVec_Delta + ['TTran']
+        ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec_Delta]
+        self.xTrainingVar = ChooseVarsI + ChooseVarsData
         self.yTrainingVar = InputData.RatesType
         print('[SurQCT]:   Variables Selected for Training:')
         print('[SurQCT]:     x = ', self.xTrainingVar)
         print('[SurQCT]:     y = ', self.yTrainingVar)
-        #-------------------------------------------------------------------------------------------------------------------------------  
+        #-------------------------------------------------------------------------------------------------------------------------------
 
 
         #-------------------------------------------------------------------------------------------------------------------------------  
@@ -45,43 +129,100 @@ class model:
             self.yValid       = ValidData[1]
         #-------------------------------------------------------------------------------------------------------------------------------  
 
-
         if (InputData.DefineModelIntFlg > 0):
             print('[SurQCT]:   Defining ML Model from Scratch')
 
+            ### Normalizer Layers
+            if (InputData.TransferFlg): 
+                ModelFile         = InputData.TransferModelFld + '/MyModel/'
+                NN_Transfer_Model = keras.models.load_model(ModelFile)
+                MCFile            = InputData.TransferModelFld + '/Params/ModelCheckpoint/cp-{epoch:04d}.ckpt'
+                checkpoint_dir    = os.path.dirname(MCFile)
+                latest            = train.latest_checkpoint(checkpoint_dir)
+                NN_Transfer_Model.load_weights(latest)
+            else:
+                NN_Transfer_Model = None
 
             #---------------------------------------------------------------------------------------------------------------------------
-            kW1 = InputData.WeightDecay[0]
-            kW2 = InputData.WeightDecay[1]
+            xDim_i              = len(VarsVec_i)
+            xDim_Delta          = len(VarsVec_Delta)
+            input_              = tf.keras.Input(shape=[xDim_i+xDim_Delta,])
 
-            normalizer = preprocessing.Normalization()
-            normalizer.adapt(np.array(self.xTrain[self.xTrainingVar]))
-            LayersList = [normalizer]
+            if (InputData.NormalizeInput):
+                if (InputData.TransferFlg): 
+                    Mean             = NN_Transfer_Model.get_layer('normalization').mean.numpy()
+                    Variance         = NN_Transfer_Model.get_layer('normalization').variance.numpy()
+                    normalizer       = preprocessing.Normalization(mean=Mean, variance=Variance)
+                else:
+                    normalizer       = preprocessing.Normalization()
+                    self.xTrain      = self.xTrain[self.xTrainingVar]
+                    normalizer.adapt(np.array(self.xTrain))
+                InputNor             = normalizer(input_)
+            else:
+                InputNor             = input_
 
-            NLayers = len(InputData.NNLayers)
+
+            kW1      = InputData.WeightDecay[0]
+            kW2      = InputData.WeightDecay[1]
+            NNLayers = InputData.NNLayers
+            NLayers  = len(NNLayers)
+            ActFun   = InputData.ActFun
+
+            hiddenVec = [InputNor]
             for iLayer in range(NLayers):
-                LayerName = 'HL' + str(iLayer+1)
-                LayersList.append( layers.Dense(units=InputData.NNLayers[iLayer],
-                                                activation=InputData.ActFun[iLayer],
-                                                use_bias=True,
-                                                kernel_initializer='glorot_normal',
-                                                bias_initializer='zeros',
-                                                kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                                bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                                name=LayerName) )
+                WeightsName = 'HL' + str(iLayer+1) 
+                LayerName   = WeightsName 
 
-                LayersList.append( layers.Dropout(InputData.DropOutRate, input_shape=(InputData.NNLayers[iLayer],)) )
+                if (InputData.TransferFlg):
+                    x0     = NN_Transfer_Model.get_layer(LayerName).kernel.numpy()
+                    b0     = NN_Transfer_Model.get_layer(LayerName).bias.numpy()
+                    WIni   = tf.keras.initializers.RandomNormal(mean=x0, stddev=1.e-10)
+                    bIni   = tf.keras.initializers.RandomNormal(mean=b0, stddev=1.e-10)
+                    WRegul = L1L2Regularizer(kW1, kW2, x0)
+                    bRegul = L1L2Regularizer(kW1, kW2, b0)
+                else:
+                    WIni   = 'glorot_normal'
+                    bIni   = 'zeros'
+                    WRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
+                    bRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
 
-            LayersList.append(layers.Dense(units=1,
-                                           activation='linear',
-                                           use_bias=True,
-                                           kernel_initializer='glorot_normal',
-                                           bias_initializer='zeros',
-                                           kernel_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                           bias_regularizer=regularizers.l1_l2(l1=kW1, l2=kW2),
-                                           name='OL'))
+                hiddenVec.append(layers.Dense(units            = NNLayers[iLayer],
+                                            activation         = ActFun[iLayer],
+                                            use_bias           = True,
+                                            kernel_initializer = WIni,
+                                            bias_initializer   = bIni,
+                                            kernel_regularizer = WRegul,
+                                            bias_regularizer   = bRegul,
+                                            name               = LayerName)(hiddenVec[-1]))
+                
+                if (iLayer < NLayers-1):
+                    hiddenVec.append(layers.Dropout(InputData.DropOutRate, input_shape=(NNLayers[iLayer],))(hiddenVec[-1]))       
 
-            self.Model = keras.Sequential(LayersList)
+
+            LayerName  = 'FinalScaling'
+            if (InputData.TransferFlg):
+                x0     = NN_Transfer_Model.get_layer(LayerName).kernel.numpy()
+                b0     = NN_Transfer_Model.get_layer(LayerName).bias.numpy()
+                WIni   = tf.keras.initializers.RandomNormal(mean=x0, stddev=1.e-10)
+                bIni   = tf.keras.initializers.RandomNormal(mean=b0, stddev=1.e-10)
+                WRegul = None #L1L2Regularizer(kW1, kW2, x0)
+                bRegul = None #L1L2Regularizer(kW1, kW2, b0)
+            else:
+                WIni   = 'glorot_normal'
+                bIni   = 'zeros'
+                WRegul = None #regularizers.l1_l2(l1=kW1, l2=kW2)
+                bRegul = None #regularizers.l1_l2(l1=kW1, l2=kW2)
+
+            output_Final = layers.Dense(units              = 1,
+                                          activation         = 'linear',
+                                          use_bias           = True,
+                                          kernel_initializer = WIni,
+                                          bias_initializer   = bIni,
+                                          kernel_regularizer = WRegul,
+                                          bias_regularizer   = bRegul,
+                                          name               = 'OL')(hiddenVec[-1])
+
+            self.Model = keras.Model(inputs=[input_], outputs=[output_Final] )
             #---------------------------------------------------------------------------------------------------------------------------
 
 
@@ -177,13 +318,17 @@ class model:
     #===================================================================================================================================
     def train(self, InputData):
 
+        _start_time      = get_start_time()
+        TBCheckpointFldr = InputData.TBCheckpointFldr + "/" + InputData.ExcitType +"/Run" + str(InputData.NNRunIdx) + "_{}".format(get_start_time())
+
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         MCCallBack    = callbacks.ModelCheckpoint(filepath=MCFile, monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=0, mode='auto', save_freq='epoch', options=None)
-        #LRCallBack    = callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.7, patience=500, mode='auto', min_delta=1.e-6, cooldown=0, min_lr=1.e-8, verbose=1)
-        TBCallBack    = callbacks.TensorBoard(log_dir=InputData.TBCheckpointFldr, histogram_freq=100, batch_size=InputData.MiniBatchSize, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
-        #CallBacksList = [MCCallBack, ESCallBack, TBCallBack]
-        CallBacksList = [ESCallBack, TBCallBack, MCCallBack]
+        LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-4, cooldown=0, min_lr=1.e-8, verbose=1)
+        TBCallBack    = callbacks.TensorBoard(log_dir=TBCheckpointFldr, histogram_freq=0, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
+        
+        CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]
+        #CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)
         # xTrain, xValid, yTrain, yValid = train_test_split(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], test_size=InputData.ValidPerc/100.0) #stratify=self.yTrain[self.yTrainingVar],
@@ -196,6 +341,9 @@ class model:
                                        verbose=1, 
                                        epochs=InputData.NEpoch, 
                                        callbacks=CallBacksList)
+
+        ModelFile = InputData.PathToRunFld + '/MyModel/MyWeights.h5'
+        self.Model.save_weights(ModelFile)
 
         return History
 

@@ -63,20 +63,20 @@ class inputdata(object):
         self.RandDataFlg         = True                                                                      # Randomize Training Data 
         self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0])#np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0, 30000.0, 50000.0])])
         self.iLevelsIntFlg       = 4
-        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/LevelsList_Active/SampledLevels_T'
+        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/Active_Sampled/O2_T'
         self.ExoEndoFlg          = True
         #self.iLevelsSeedsVec     = [0, 4, 3, 1, 2]
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]
         #self.NiLevelsSampled    = 100
 
         self.NEpoch              = 100000                                                                     # Number of Epoches
-        self.MiniBatchSize       = 64
+        self.MiniBatchSize       = 128
         self.LossFunction        = 'mean_absolute_percentage_error'#'mean_squared_logarithmic_error'
         self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
         self.WeightDecay         = np.array([1.e-10, 1.e-4], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
-        self.ImpThold            = 1.e-4  
+        self.ImpThold            = 1.e-4   
         self.NPatience           = 300 
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)
 

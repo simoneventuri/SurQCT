@@ -413,12 +413,27 @@ class model:
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)
         # xTrain, xValid, yTrain, yValid = train_test_split(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], test_size=InputData.ValidPerc/100.0) #stratify=self.yTrain[self.yTrainingVar],
-        print('[SurQCT]:   Here Some of the Training   Labels ... ', self.yTrain[self.yTrainingVar])
-        print('[SurQCT]:   Here Some of the Validation Labels ... ', self.yValid[self.yTrainingVar])
 
-        History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], 
+        yTrain                                                 = self.yTrain[self.yTrainingVar]
+        print('[SurQCT]:   Here Some of the Training   Labels ... ', yTrain)
+        print('[SurQCT]:   Training   Labels Min Value        ... ', np.amin(yTrain))
+        print('[SurQCT]:   Training   Labels Max Value        ... ', np.amax(yTrain))
+
+        yValid                                                 = self.yValid[self.yTrainingVar]
+        print('[SurQCT]:   Here Some of the Validation Labels ... ', yValid)
+
+        yWeights                                               = np.ones_like(yTrain)
+        yWeights[yTrain > np.log(1.e-13 * InputData.MultFact)] = 2.0
+        yWeights[yTrain > np.log(1.e-12 * InputData.MultFact)] = 4.0
+        yWeights[yTrain > np.log(1.e-11 * InputData.MultFact)] = 6.0
+        yWeights[yTrain > np.log(1.e-10 * InputData.MultFact)] = 8.0
+        yWeights[yTrain > np.log(1.e-9  * InputData.MultFact)] = 10.0
+        print('[SurQCT]:   Here Some of the Label Weights ... ', yWeights)
+
+        History       = self.Model.fit(self.xTrain[self.xTrainingVar], yTrain, 
+                                       sample_weight=yWeights,
                                        batch_size=InputData.MiniBatchSize, 
-                                       validation_data=(self.xValid[self.xTrainingVar], self.yValid[self.yTrainingVar]), 
+                                       validation_data=(self.xValid[self.xTrainingVar], yValid), 
                                        verbose=1, 
                                        epochs=InputData.NEpoch, 
                                        callbacks=CallBacksList)

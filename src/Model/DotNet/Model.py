@@ -423,10 +423,11 @@ class model:
         print('[SurQCT]:   Here Some of the Validation Labels ... ', yValid)
 
         yWeights                                               = np.ones_like(yTrain)
-        yWeights[yTrain > np.log(1.e-13 * InputData.MultFact)] = 1.5
-        yWeights[yTrain > np.log(1.e-12 * InputData.MultFact)] = 2.0
-        yWeights[yTrain > np.log(1.e-11 * InputData.MultFact)] = 2.5
-        yWeights[yTrain > np.log(1.e-10 * InputData.MultFact)] = 3.0
+        yWeights[yTrain > np.log(1.e-13 * InputData.MultFact)] = 2.0
+        yWeights[yTrain > np.log(1.e-12 * InputData.MultFact)] = 4.0
+        yWeights[yTrain > np.log(1.e-11 * InputData.MultFact)] = 6.0
+        yWeights[yTrain > np.log(1.e-10 * InputData.MultFact)] = 8.0
+        yWeights[yTrain > np.log(1.e-9  * InputData.MultFact)] = 10.0
         print('[SurQCT]:   Here Some of the Label Weights ... ', yWeights)
 
         History       = self.Model.fit(self.xTrain[self.xTrainingVar], yTrain, 

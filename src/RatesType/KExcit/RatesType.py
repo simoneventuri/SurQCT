@@ -29,8 +29,8 @@ def generate_trainingdata(InputData):
     print('[SurQCT]:   Reading Variables: ', xVarsVec)
 
     InputData.MultFact = 1.e+09
-    MinValueTrain      = 1.e-16 * InputData.MultFact
-    MinValueTest       = 1.e-16 * InputData.MultFact
+    MinValueTrain      = 1.e-15 * InputData.MultFact
+    MinValueTest       = 1.e-15 * InputData.MultFact
     NoiseSD            = 1.e-15 * InputData.MultFact
 
     NMolecules         = len(InputData.PathToLevelsFile)

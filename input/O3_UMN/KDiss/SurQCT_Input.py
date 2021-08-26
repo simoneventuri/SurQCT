@@ -31,7 +31,7 @@ class inputdata(object):
         self.PathToFigFld        = self.PathToRunFld + '/Figures/'                                        # Path To Training Figures Folder 
         self.PathToDataFld       = self.PathToRunFld + '/Data/'                                           # Path To Training Data Folder 
         self.PathToParamsFld     = self.PathToRunFld + '/Params/'                                         # Path To Training Parameters Folder 
-        self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_HighAccuracy/O3_UMN.hdf5'
+        self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
         self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2.csv']
         self.PathToGrouping      = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'   
@@ -48,7 +48,7 @@ class inputdata(object):
         self.xVarsVec            = ['EVib','ERot','VMax','ro','rMax']#['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro']
         self.RandDataFlg         = True                                                                      # Randomize Training Data 
 
-        self.TTranVecTrain       = np.array([1500.0, 2500.0, 5000.0, 10000.0, 15000.0, 20000.0, 30000.0, 50000.0])
+        self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0])
         self.iLevelsIntFlg       = 4
         self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/O2_Sampled_'
         #self.iLevelsSeedsVec     = [0, 4, 3, 1, 2]
@@ -68,6 +68,6 @@ class inputdata(object):
 
         #=======================================================================================================================================
         ### Testing Quantities
-        self.TestPerc            = 0.0                                                                      # Percentage of Overall Data to Be Used for Testing (e.g., = 20.0 => 20%)
+        self.TestPerc            = 60.0                                                                      # Percentage of Overall Data to Be Used for Testing (e.g., = 20.0 => 20%)
         self.TTranVecTest        = np.array([1500.0, 2500.0, 5000.0, 6000.0, 8000.0, 10000.0, 12000.0, 14000.0, 15000.0, 20000.0])
         self.TTranVecExtra       = np.array([300.0, 40000.0])

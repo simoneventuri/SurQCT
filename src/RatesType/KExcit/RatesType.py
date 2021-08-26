@@ -28,10 +28,10 @@ def generate_trainingdata(InputData):
     xVarsVec           = list(set(xVarsVec_i) | set(xVarsVec_Delta))
     print('[SurQCT]:   Reading Variables: ', xVarsVec)
 
-    InputData.MultFact = 1.e+09
-    MinValueTrain      = 1.e-16 * InputData.MultFact
-    MinValueTest       = 1.e-16 * InputData.MultFact
-    NoiseSD            = 1.e-15 * InputData.MultFact
+    InputData.MultFact      = 1.e+09
+    MinValueTrain           = 1.e-15 * InputData.MultFact
+    MinValueTest            = 1.e-16 * InputData.MultFact
+    NoiseSD                 = 1.e-15 * InputData.MultFact
 
     NMolecules         = len(InputData.PathToLevelsFile)
 
@@ -108,10 +108,10 @@ def generate_trainingdata(InputData):
 
             ### Selecting only Final States with EXOTHERMIC KExit > MinValueTrain 
             if (InputData.ExoEndoFlg):
-                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] <= DiatData[0]['EInt'].to_numpy()[iIdx])]
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] <  DiatData[0]['EInt'].to_numpy()[iIdx])]
                 jIdxVecNo         = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] >  DiatData[0]['EInt'].to_numpy()[iIdx])]
             else:
-                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >= DiatData[0][Str].to_numpy()[iIdx])]
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >  DiatData[0][Str].to_numpy()[iIdx])]
                 jIdxVecNo         = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >  DiatData[0][Str].to_numpy()[iIdx])]
             
 

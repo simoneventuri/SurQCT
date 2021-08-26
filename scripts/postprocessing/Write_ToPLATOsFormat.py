@@ -54,18 +54,18 @@ SurQCTFldr          = WORKSPACE_PATH + '/SurQCT/surqct/'
 RatesType           = 'KExcit'
 
 ExcitType           = 'KInel'
-NNRunIdx            = 10      
+NNRunIdx            = 5
 # ExcitType           = 'KExch'
 # NNRunIdx            = 1      
 
-PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/' 
+PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures/' + ExcitType + '/' 
 
-TTranVec            = [10000.0]
+TTranVec            = [1500.0]
 
 Molecules           = ['O2','O2']
 Atoms               = ['O','O']
 
-0DRunIdx            = 1
+ODRunIdx            = NNRunIdx
 
 
 
@@ -95,7 +95,7 @@ InputData.PathToFigFld    = InputData.PathToRunFld+'/'+InputData.PathToFigFld
 InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
 InputData.PathToDataFld   = InputData.PathToRunFld+'/Data/'                                                               
 InputData.PathToParamsFld = InputData.PathToRunFld+'/Params/' 
-InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/O3_UMN_nondim_Run'+str(0DRunIdx)+'/'
+InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/O3_UMN_Run'+str(ODRunIdx)+'/'
 
 # InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
 # InputData.Molecules       = ['N2','N2'] 
@@ -136,6 +136,7 @@ MinValueTest       = 1.e-16 * InputData.MultFact
 NoiseSD            = 1.e-13 * InputData.MultFact
 
 NMolecules         = len(InputData.PathToLevelsFile)
+idxvec_cutoff = [1000]
 
 InputData.iLevelsVecTest = list(np.array(InputData.iLevelsVecTest) - 1)
 
@@ -218,17 +219,16 @@ for TTran in TTranVec:
 	    pass
 
 	if(ExcitType == 'KInel'):   
-	    KineticFile_KInel = PathToKineticFldr + '/Inel.dat'
+	    KineticFile_KInel = PathToKineticFldr + '/Inel_cutoff.dat'
 	    csvkinetics_KInel = write_predictiondata(KineticFile_KInel, None, -1, Molecules, Atoms, None, None, None)
 	elif(ExcitType == 'KExch'):   
 	    KineticFile_KExch = PathToKineticFldr + '/Exch_Type1.dat'
 	    csvkinetics_KExch = write_predictiondata(KineticFile_KExch, None, -1, Molecules, Atoms, None, None, None)
 
 
-
 	### Loop on Initial States
 	Str = 'q_'+str(int(TTran))
-	for iIdx in tqdm(range(NLevels[0]), desc='[SurQCT]:     Generating Inelastic and Exchange Rate Matrixes'):
+	for iIdx in tqdm(range(idxvec_cutoff[0]), desc='[SurQCT]:     Generating Inelastic and Exchange Rate Matrixes'):
 	    time.sleep(0.001)
 	    
 	    if (InputData.ExoEndoFlg):

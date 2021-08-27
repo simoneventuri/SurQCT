@@ -46,8 +46,8 @@ class inputdata(object):
         self.ApproxModel         = 'FNN'
         self.NormalizeInput      = True
         self.NNLayers            = np.array([32, 32, 32])
-        self.ActFun              = ['selu', 'selu', 'selu']
-        self.DropOutRate         = 1.e-4
+        self.ActFun              = ['tanh', 'tanh', 'tanh']
+        self.DropOutRate         = 1.e-3
         self.FinalLayerFlg       = True
 
         #=======================================================================================================================================
@@ -68,10 +68,10 @@ class inputdata(object):
         self.NEpoch              = 100000                                                                     # Number of Epoches
         self.MiniBatchSize       = 32
         self.LossFunction        = 'mean_absolute_percentage_error'
-        self.LearningRate        = 1.e-3                                                                     # Initial Learning Rate
+        self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
-        self.WeightDecay         = np.array([1.e-5, 1.e-5], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
+        self.WeightDecay         = np.array([1.e-4, 1.e-4], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
         self.ImpThold            = 1.e-4
         self.NPatience           = 3000
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)

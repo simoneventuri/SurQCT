@@ -109,12 +109,21 @@ class model:
 
 
         #-------------------------------------------------------------------------------------------------------------------------------        
-        VarsVec_i         = InputData.xVarsVec_i + ['TTran']
-        ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec_i]
-        VarsVec_Delta     = InputData.xVarsVec_Delta + ['TTran']
-        ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec_Delta]
-        self.xTrainingVar = ChooseVarsI + ChooseVarsData
-        self.yTrainingVar = InputData.RatesType
+        if (InputData.RatesType == 'KExcit'):
+            VarsVec_i         = InputData.xVarsVec_i + ['TTran']
+            ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec_i]
+            VarsVec_Delta     = InputData.xVarsVec_Delta + ['TTran']
+            ChooseVarsData    = [(VarName + InputData.OtherVar) for VarName in VarsVec_Delta]
+            self.xTrainingVar = ChooseVarsI + ChooseVarsData
+            self.yTrainingVar = InputData.RatesType
+
+        else:
+            VarsVec_i         = InputData.xVarsVec_i + ['TTran']
+            VarsVec_Delta     = []
+            ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec_i]
+            self.xTrainingVar = ChooseVarsI
+            self.yTrainingVar = InputData.RatesType
+
         print('[SurQCT]:   Variables Selected for Training:')
         print('[SurQCT]:     x = ', self.xTrainingVar)
         print('[SurQCT]:     y = ', self.yTrainingVar)
@@ -127,6 +136,8 @@ class model:
             self.yTrain       = TrainData[1]
             self.xValid       = ValidData[0]
             self.yValid       = ValidData[1]
+
+            print('self.xTrain = ', self.xTrain.head())
         #-------------------------------------------------------------------------------------------------------------------------------  
 
         if (InputData.DefineModelIntFlg > 0):
@@ -319,7 +330,11 @@ class model:
     def train(self, InputData):
 
         _start_time      = get_start_time()
-        TBCheckpointFldr = InputData.TBCheckpointFldr + "/" + InputData.ExcitType +"/Run" + str(InputData.NNRunIdx) + "_{}".format(get_start_time())
+        if (InputData.RatesType == 'KExcit'):
+            Prefix       = InputData.ExcitType
+        else:
+            Prefix       = 'KDiss'
+        TBCheckpointFldr = InputData.TBCheckpointFldr + "/" + Prefix +"/Run" + str(InputData.NNRunIdx) + "_{}".format(get_start_time())
 
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
@@ -332,12 +347,26 @@ class model:
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)
         # xTrain, xValid, yTrain, yValid = train_test_split(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], test_size=InputData.ValidPerc/100.0) #stratify=self.yTrain[self.yTrainingVar],
-        print('[SurQCT]:   Here Some of the Training   Labels ... ', self.yTrain[self.yTrainingVar])
-        print('[SurQCT]:   Here Some of the Validation Labels ... ', self.yValid[self.yTrainingVar])
+        
+        yTrain                                                 = self.yTrain[self.yTrainingVar]
+        print('[SurQCT]:   Here Some of the Training   Labels ... ', yTrain)
+        print('[SurQCT]:   Training   Labels Min Value        ... ', np.amin(yTrain))
+        print('[SurQCT]:   Training   Labels Max Value        ... ', np.amax(yTrain))
 
-        History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], 
+        yValid                                                 = self.yValid[self.yTrainingVar]
+        print('[SurQCT]:   Here Some of the Validation Labels ... ', yValid)
+
+        yWeights                                               = np.ones_like(yTrain)
+        yWeights[yTrain > np.log(1.e-13 * InputData.MultFact)] = 2.0
+        yWeights[yTrain > np.log(1.e-12 * InputData.MultFact)] = 4.0
+        yWeights[yTrain > np.log(1.e-11 * InputData.MultFact)] = 6.0
+        yWeights[yTrain > np.log(1.e-10 * InputData.MultFact)] = 8.0
+        yWeights[yTrain > np.log(1.e-9  * InputData.MultFact)] = 10.0
+
+        History       = self.Model.fit(self.xTrain[self.xTrainingVar], yTrain, 
+                                       sample_weight=yWeights,
                                        batch_size=InputData.MiniBatchSize, 
-                                       validation_data=(self.xValid[self.xTrainingVar], self.yValid[self.yTrainingVar]), 
+                                       validation_data=(self.xValid[self.xTrainingVar], yValid), 
                                        verbose=1, 
                                        epochs=InputData.NEpoch, 
                                        callbacks=CallBacksList)

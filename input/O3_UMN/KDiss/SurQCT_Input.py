@@ -25,45 +25,55 @@ class inputdata(object):
         ### Paths
         self.WORKSPACE_PATH      = WORKSPACE_PATH                                                         # os.getenv('WORKSPACE_PATH')      
         self.SurQCTFldr          = SurQCTFldr                                                             # $WORKSPACE_PATH/ProPDE/
-        self.NNRunIdx            = 24                                                                      # Training Case Identification Number 
-        self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/KDiss_Test' + str(self.NNRunIdx) # Path To Training Folder
-        self.TBCheckpointFldr    = self.PathToRunFld + '/TB/'
-        self.PathToFigFld        = self.PathToRunFld + '/Figures/'                                        # Path To Training Figures Folder 
-        self.PathToDataFld       = self.PathToRunFld + '/Data/'                                           # Path To Training Data Folder 
-        self.PathToParamsFld     = self.PathToRunFld + '/Params/'                                         # Path To Training Parameters Folder 
-        self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
+        self.NNRunIdx            = 0                                                                      # Training Case Identification Number 
+        self.PathToRunFld        = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/'       # Path To Training Fldr
+        self.TBCheckpointFldr    = self.SurQCTFldr + '/../' + self.RatesType + '/all_temperatures/TB/'
+        self.PathToFigFld        = '/Figures/'                                                                                    # Path To Training Figures Folder 
+        self.PathToDataFld       = '/Data/'                                                                                       # Path To Training Data Folder 
+        self.PathToParamsFld     = '/Params/'                                                                                     # Path To Training Parameters Folder 
+        self.PathToHAHDF5File    = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_Active/O3_UMN.hdf5'
         self.PathToHDF5File      = self.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/O3_UMN.hdf5'
-        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/O2.csv']
-        self.PathToGrouping      = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'   
+        self.Molecules           = ['O2','O2'] 
+        self.PathToLevelsFile    = [self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/Active_Sampled/O2_AIAA.csv',
+                                    self.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/Active_Sampled/O2_AIAA.csv']
+        self.PathToDiatFile      = [self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp',
+                                    self.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/O2/UMN/FromUMN_Sorted.inp']                               
+        self.PathToGrouping      = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'  
+
 
         #=======================================================================================================================================
         ## NN Model Structure
         self.ApproxModel         = 'FNN'
-        self.NNLayers            = np.array([16, 16])
-        self.ActFun              = ['relu', 'relu']
-        self.DropOutRate         = 1.e-2
+        self.NormalizeInput      = True
+        self.NNLayers            = np.array([32, 32, 32])
+        self.ActFun              = ['tanh', 'tanh', 'tanh']
+        self.DropOutRate         = 1.e-3
+        self.FinalLayerFlg       = True
 
         #=======================================================================================================================================
         ### Training Quanties
-        self.xVarsVec            = ['EVib','ERot','VMax','ro','rMax']#['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro']
+        self.TransferFlg         = False
+        self.TransferModelFld    = self.WORKSPACE_PATH  + "/SurQCT/KExcit/all_temperatures_nondim/KInel/Run_10/"
+        self.xVarsVec_i          = ['EVib','ERot','VMax','ro','rMax']#['EVib','ERot','rMin','rMax','VMin','VMax','Tau','ri','ro']
+        self.xVarsVec_Delta      = []
+        self.OtherVar            = ''
         self.RandDataFlg         = True                                                                      # Randomize Training Data 
-
-        self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0])
+        self.TTranVecTrain       = np.array([1500.0, 5000.0, 10000.0, 15000.0, 20000.0])#np.array([1500.0, 5000.0, 8000.0, 12000.0, 15000.0, 20000.0, 30000.0, 50000.0])])
         self.iLevelsIntFlg       = 4
-        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/O2_Sampled_'
+        self.PathToSampledLevels = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/levels/Active_Sampled/O2_T'
         #self.iLevelsSeedsVec     = [0, 4, 3, 1, 2]
         #self.iLevelsVecTrain     = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000]
         #self.NiLevelsSampled    = 100
 
-        self.NEpoch              = 50000                                                                     # Number of Epoches
+        self.NEpoch              = 100000                                                                     # Number of Epoches
         self.MiniBatchSize       = 32
         self.LossFunction        = 'mean_absolute_percentage_error'
-        self.LearningRate        = 5.e-5                                                                     # Initial Learning Rate
+        self.LearningRate        = 1.e-4                                                                     # Initial Learning Rate
         self.Optimizer           = 'adam'                                                                    # Optimizer Identificator
         self.OptimizerParams     = [0.9, 0.999, 1e-07]                                                       # Parameters for the Optimizer
-        self.WeightDecay         = np.array([1.e-4, 5.e-5], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
+        self.WeightDecay         = np.array([1.e-4, 1.e-4], dtype=np.float64)                                # Hyperparameters for L1 and L2 Weight Decay Regularizations
         self.ImpThold            = 1.e-4
-        self.NPatience           = 500
+        self.NPatience           = 3000
         self.ValidPerc           = 20.0                                                                      # Percentage of Training Data to Be Used for Validation (e.g., = 20.0 => 20%)
 
         #=======================================================================================================================================

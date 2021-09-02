@@ -19,12 +19,12 @@ def generate_trainingdata(InputData):
 
     from Reading  import read_levelsdata, sample_initiallevels, read_sampledinitiallevels
 
-    xVarsVec           = InputData.xVarsVec
+    xVarsVec           = InputData.xVarsVec_i
 
-    InputData.MultFact = 1.e+07
+    InputData.MultFact = 1.e+08
     MinValueTrain      = 1.e-18 * InputData.MultFact
     MinValueTest       = 1.e-18 * InputData.MultFact
-    NoiseSD            = 1.e-13 * InputData.MultFact
+    NoiseSD            = 1.e-17
 
 
     #===================================================================================================================================
@@ -51,7 +51,7 @@ def generate_trainingdata(InputData):
 
         ### Reading Rates at Temperature TTranVec[iT]
         KDiss       = read_kdissdata(InputData, InputData.PathToHAHDF5File, TTranVec[iT], TTranVec[iT])
-
+        KDiss      += np.exp( np.random.normal(loc=np.log(NoiseSD), scale=0.5, size=len(KDiss)) ) * InputData.MultFact
 
         ### Deciding Initial Levels LIst        
         if   (InputData.iLevelsIntFlg == 1):

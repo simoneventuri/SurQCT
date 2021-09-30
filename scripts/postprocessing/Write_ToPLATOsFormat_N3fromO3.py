@@ -65,12 +65,13 @@ NNRunIdx            = 2
 PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/' 
 
 #TTranVec            = [1500.0, 2500.0, 5000.0, 8000.0, 10000.0, 12000.0, 15000.0, 20000.0]
-TTranVec            = [1500.0]
+TTranVec            = [10000.0]
 
-Molecules           = ['O2','O2']
-Atoms               = ['O','O']
+Molecules           = ['N2','N2']
+Atoms               = ['N','N']
+System = 'N3_NASA'
 
-ZeroDRunIdx         = 2
+ZeroDRunIdx         = NNRunIdx
 
 MinValueTrain       = 1.e-15
 
@@ -100,14 +101,16 @@ InputData.PathToFigFld    = InputData.PathToRunFld+'/'+InputData.PathToFigFld
 InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
 InputData.PathToDataFld   = InputData.PathToRunFld+'/Data/'                                                               
 InputData.PathToParamsFld = InputData.PathToRunFld+'/Params/' 
-InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/nondim_O3_UMN_Active_Run'+str(ZeroDRunIdx)+'/'
+InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/nondim_'+System+'_Active_Run'+str(ZeroDRunIdx)+'/'
+InputData.PathToLevelsFile = [WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_log_nd.csv',
+                              WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_log_nd.csv']
 
 # InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
 # InputData.Molecules       = ['N2','N2'] 
 # InputData.PathToLevelsFile= [InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_nd_ELog.csv',
 #                              InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_nd_ELog.csv']
-# InputData.PathToDiatFile  = [InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp',
-#                              InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp']   
+InputData.PathToDiatFile  = [WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp',
+                             WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp']   
 # #InputData.PathToGrouping  = self.WORKSPACE_PATH  + '/Air_Database/Run_0D/database/grouping/O3_UMN/O2/LevelsMap_DPM45.csv'   
 # #===================================================================================================================================
 

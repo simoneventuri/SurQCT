@@ -18,8 +18,8 @@ def write_predictiondata(KineticFile, csvkinetics, iFlg, Molecules, Atoms, jLeve
 
     if (iFlg == 0):
         for i in range(len(jLevelVec)): 
-            ProcName = Molecules[0] + '(' + str(i+1) + ')+' + Atoms[0] + '=' + Atoms[1]+'+'+Atoms[1]+'+'+Atoms[1]
-            Line     = ProcName + ':%.4e,+0.0000E+00,+0.0000E+00,5\n' % KVec[i]
+            ProcName = Molecules[0] + '(' + str(jLevelVec[i]+1) + ')+' + Atoms[0] + '=' + Atoms[1]+'+'+Atoms[1]+'+'+Atoms[1]
+            Line     = ProcName + ':%.4e,+0.0000E+00,+0.0000E+00,2\n' % KVec[i]
             csvkinetics.write(Line)
 
     elif (iFlg == -1):
@@ -41,17 +41,17 @@ SurQCTFldr          = WORKSPACE_PATH + '/SurQCT/surqct/'
 
 RatesType           = 'KDiss'
 
-NNRunIdx            = 4      
+NNRunIdx            = 20
 
 PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures/'  
 
-#TTranVec            = [1500.0, 2500.0, 5000.0, 6000.0, 8000.0, 10000.0, 12000.0, 15000.0, 20000.0]
-TTranVec            = [1500.0]
+TTranVec            = [1500.0, 10000.0]
+#TTranVec            = [1500.0]
 
 Molecules           = ['O2','O2']
 Atoms               = ['O','O']
 
-ODRunIdx            = 1
+ODRunIdx            = 20
 
 
 #===================================================================================================================================
@@ -80,7 +80,7 @@ InputData.PathToFigFld    = InputData.PathToRunFld+'/'+InputData.PathToFigFld
 InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
 InputData.PathToDataFld   = InputData.PathToRunFld+'/Data/'                                                               
 InputData.PathToParamsFld = InputData.PathToRunFld+'/Params/' 
-InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/O3_UMN_Run'+str(ODRunIdx)+'/'
+InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/Diss/O3_UMN_Run'+str(ODRunIdx)+'/'
 
 #===================================================================================================================================
 print("\n[SurQCT]: Loading Final Modules ... ")
@@ -104,6 +104,7 @@ xVarsVec           = list(set(xVarsVec_i) | set(xVarsVec_Delta))
 print('[SurQCT]:   Reading Variables: ', xVarsVec)
 
 InputData.MultFact = 1.e+08
+MinValue           = 1.e-16
 MinValueTrain      = 1.e-18 * InputData.MultFact
 MinValueTest       = 1.e-18 * InputData.MultFact
 NoiseSD            = 1.e-17 * InputData.MultFact
@@ -159,7 +160,7 @@ for TTran in TTranVec:
         pass
 
     FileName     = '/Diss.dat'
-    if (InputData.DissCorrFactor != 0.0):
+    if (InputData.DissCorrFactor != 1.0):
         FileName = '/Diss_Corrected.dat' 
 
     KineticFile_KDiss = PathToKineticFldr + FileName
@@ -181,7 +182,7 @@ for TTran in TTranVec:
     xTemp.columns            = [(VarName + '_i') for VarName in xTemp.columns]
 
     KDiss                    = np.exp( NN_KDiss.Model.predict(xTemp[NN_KDiss.xTrainingVar]) ) / InputData.MultFact * InputData.DissCorrFactor
-    iIdxVec                  = [i for i in range(NLevels[1]) if (KDiss[i,0] > MinValueTrain)]
+    iIdxVec                  = [i for i in range(NLevels[1]) if (KDiss[i,0] > MinValue)]
     #KDissVec[iIdxVec]  = KDiss[iIdxVec,0] 
 
     csvkinetics_KDiss        = write_predictiondata(KineticFile_KDiss, csvkinetics_KDiss, 0, Molecules, Atoms, iIdxVec, KDiss[iIdxVec,0])

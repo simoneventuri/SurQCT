@@ -28,7 +28,6 @@ sys.path.append(SurQCTFldr + 'src/Callbacks/')
 from customCallbacks import customReduceLROnPlateau
 
 
-
 #=======================================================================================================================================
 from datetime import datetime
 
@@ -71,7 +70,7 @@ class L2Regularizer(tf.keras.regularizers.Regularizer):
 
 @tf.keras.utils.register_keras_serializable(package='Custom', name='l1l2')
 class L1L2Regularizer(tf.keras.regularizers.Regularizer):
-  def __init__(self, l1, l2, x0):
+  def __init__(self, l1, l2, x0, **kwargs):
     self.l1 = l1
     self.l2 = l2
     self.x0 = x0
@@ -169,7 +168,7 @@ class model:
     # Class Initialization
     def __init__(self, InputData, PathToRunFld, TrainData, ValidData):
 
-
+    
         #===================================================================================================================================
         class AdditiveGaussNoise(layers.Layer):
           def __init__(self, mean, stddev):
@@ -292,7 +291,6 @@ class model:
             self.Model = keras.Model(inputs=[input_], outputs=[output_Final] )
             #---------------------------------------------------------------------------------------------------------------------------
 
-
             #---------------------------------------------------------------------------------------------------------------------------
             LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=200000, decay_rate=0.98, staircase=True)
             #LearningRate = InputData.LearningRate
@@ -409,7 +407,7 @@ class model:
         TBCallBack    = callbacks.TensorBoard(log_dir=TBCheckpointFldr, histogram_freq=0, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
         
         CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]
-        #CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
+#        CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)
         # xTrain, xValid, yTrain, yValid = train_test_split(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], test_size=InputData.ValidPerc/100.0) #stratify=self.yTrain[self.yTrainingVar],

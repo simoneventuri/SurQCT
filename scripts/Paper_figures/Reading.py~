@@ -1,0 +1,117 @@
+from os import path
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import h5py
+import sys
+
+def read_diatdata(DataFile, Molecule, TTranVec):
+    print('[HCN]:   Reading Molecular Levels Data from: ' + DataFile)
+
+    # Extracting all the rot-vib levels
+    xMat           = pd.read_csv(DataFile, delim_whitespace=True, skiprows=15, header=None)
+    xMat.columns   = ['vqn','jqn','EInt','egam','rMin','rMax','VMin','VMax','Tau','ri','ro']    
+
+    # Shifting Energies so that Zero is the Min of Diatomic Potential at J=0
+    xMat['EInt']   = ( xMat['EInt'].to_numpy() - np.amin(xMat['VMax'].to_numpy()) ) * 27.211399
+    xMat['VMin']   = ( xMat['VMin'].to_numpy() - np.amin(xMat['VMax'].to_numpy()) ) * 27.211399
+    xMat['VMax']   = ( xMat['VMax'].to_numpy() - np.amin(xMat['VMax'].to_numpy()) ) * 27.211399
+    xMat['ECB']    =   xMat['VMax'].to_numpy() -  xMat['EInt'].to_numpy()
+    
+    EVib, ERot     = compute_vibenergy(xMat['EInt'].to_numpy(), xMat['vqn'].to_numpy(int), xMat['jqn'].to_numpy(int))
+    xMat['EVib']   = EVib
+    xMat['ERot']   = ERot
+    xMat['EVibv0Ref'] = EVib - np.min(EVib)
+    xMat['g']         = compute_degeneracy(xMat['jqn'].to_numpy(int), Molecule) 
+
+    kB = 8.617333262e-5
+    
+    for TTran in TTranVec:
+        Str       = 'q_'+str(int(TTran))
+        xMat[Str] = xMat['g'].to_numpy() * np.exp( - xMat['EInt'].to_numpy() / (kB*TTran) )
+
+    return xMat
+
+
+def compute_vibenergy(eint, vqn, jqn):
+    NLevels = len(eint)
+    EVib    = np.zeros((NLevels,1))
+    ERot    = np.zeros((NLevels,1))
+    ETemp   = np.zeros((np.amax(vqn)+1,1))
+    for iLevel in range(NLevels):
+        if (jqn[iLevel] == 0):
+            EVib[iLevel]       = eint[iLevel]
+            ETemp[vqn[iLevel]] = eint[iLevel]
+        else:
+            EVib[iLevel] = ETemp[vqn[iLevel]]
+            ERot[iLevel] = eint[iLevel] - EVib[iLevel]
+    return EVib, ERot
+
+
+def compute_degeneracy(jqn, Molecule):
+    if (Molecule == 'CN'):
+        g = 2*(2*jqn + 1) 
+    elif (Molecule == 'HN'):
+        g = 3*(2*jqn + 1)
+    elif (Molecule == 'CH'):
+        g = 4*(2*jqn + 1)
+    elif (Molecule == 'O2'):
+        g = 0.5*(2*jqn + 1)
+    elif (Molecule == 'N2'):
+        g = 0.5*(2*jqn + 1)        
+    else:
+        print('\n\nDEGENERACY NOT IMPLEMENTED FOR THIS MOLECULE!\n\n: '+ Molecule)
+
+    return g
+
+def read_HDF5(System, PathToHDF5File, TTra, TInt):
+    print('[HCN]:   Reading Rates Data from: ' + PathToHDF5File)
+    HDF5Exist_Flg = path.exists(PathToHDF5File)
+    if (HDF5Exist_Flg):
+        f = h5py.File(PathToHDF5File, 'a')
+    else:
+        f = {'key': 'value'}
+        
+    try:
+        TStr  = 'T_' + str(int(TTra)) + '_' + str(int(TInt)) + '/Rates/'
+        grp   = f[TStr]
+        Data  = grp["Diss"]
+        System.Rates.KDiss = Data[...]
+        Data  = grp["Inel"]
+        System.Rates.KInel = Data[...]
+
+        KExch = []
+        for iProc in range(2, System.NbProcesses):
+            ExchStr    = "Exch_" + str(iProc-1)
+            Data       = grp[ExchStr] 
+            System.Rates.KExch[iProc] = Data[...]
+        f.close()   
+        
+    except:    
+        KDiss = None
+        
+    return System
+
+# Population plot times
+def find_nearest(array, value):
+    i = 0
+    iStep=[]
+    for ivalue in value:
+        array = np.asarray(array)
+        idx = (np.abs(array - ivalue)).argmin()
+        iStep.append(idx)
+        i = i+1
+    return iStep
+
+# Read populations
+def read_pops(FilePath,System,DiatData,time):
+    Pop=pd.DataFrame()
+    print('[Master Equation]:   Reading Population Data from: ' + FilePath)
+    FileName=FilePath+'/pop_'+System.Molecule[0].Name+'.dat'
+    Pop=pd.read_csv(FileName,sep="   ",skiprows=2,header=None,index_col=False,comment='&')
+    Pop.columns=['ETemp','PopTemp']
+
+    Pop.Pop_g = np.reshape(Pop.PopTemp.to_numpy(),(np.size(time)+1,System.Molecule[0].NLevels))
+    Pop.Pop = DiatData[0]['g'].to_numpy() * Pop.Pop_g
+    
+    return Pop

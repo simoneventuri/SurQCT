@@ -49,28 +49,26 @@ def write_predictiondata(ExcitType, KineticFile, csvkinetics, iFlg, Molecules, A
 
 #=======================================================================================================================================
 
-
-
-
 WORKSPACE_PATH      = os.environ['WORKSPACE_PATH']
-SurQCTFldr          = WORKSPACE_PATH + '/SurQCT_MAITH/surqct/'
+SurQCTFldr          = WORKSPACE_PATH + '/SurQCT/surqct/'
 
 RatesType           = 'KExcit'
 
-#ExcitType           = 'KInel'
-#NNRunIdx            = 2
-ExcitType           = 'KExch'
-NNRunIdx            = 2
+ExcitType           = 'KInel'
+NNRunIdx            = 23
+#ExcitType           = 'KExch'
+#NNRunIdx            = 15
 
 PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/' 
 
-#TTranVec            = [1500.0, 2500.0, 5000.0, 8000.0, 10000.0, 12000.0, 15000.0, 20000.0]
-TTranVec            = [1500.0]
+TTranVec            = [1500.0, 2500.0, 5000.0, 8000.0, 10000.0, 12000.0, 15000.0, 20000.0]
+#TTranVec            = [10000.0]
 
 Molecules           = ['O2','O2']
 Atoms               = ['O','O']
+System = 'O3_UMN'
 
-ZeroDRunIdx         = 2
+ZeroDRunIdx         = NNRunIdx
 
 MinValueTrain       = 1.e-15
 
@@ -100,7 +98,7 @@ InputData.PathToFigFld    = InputData.PathToRunFld+'/'+InputData.PathToFigFld
 InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
 InputData.PathToDataFld   = InputData.PathToRunFld+'/Data/'                                                               
 InputData.PathToParamsFld = InputData.PathToRunFld+'/Params/' 
-InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/nondim_O3_UMN_Active_Run'+str(ZeroDRunIdx)+'/'
+InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/nondim_'+System+'_Active_Run'+str(ZeroDRunIdx)+'/'
 
 # InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
 # InputData.Molecules       = ['N2','N2'] 

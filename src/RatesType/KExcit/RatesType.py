@@ -37,8 +37,7 @@ def generate_trainingdata(InputData):
 
     InputData.iLevelsVecTest = list(np.array(InputData.iLevelsVecTest) - 1)
 
-    ReconstructExothFlg = True
-
+    #ReconstructExothFlg = True
 
     #===================================================================================================================================
     ### Reading Levels Info of Initial and Final Molecules
@@ -77,13 +76,13 @@ def generate_trainingdata(InputData):
         print('[SurQCT]:     Translational Temperature: T = ' + str(int(TTranVec[iT])) + 'K')
 
         ### Reading Rates at Temperature TTranVec[iT]
-        KInelMat, KExchMatList   = read_kexcitdata(InputData, InputData.PathToHAHDF5File, TTranVec[iT], TTranVec[iT], 3)
+        KInelMat, KExchMatList   = read_kexcitdata(InputData, InputData.PathToHAHDF5File, TTranVec[iT], TTranVec[iT], InputData.NbProcesses)
         if (  InputData.ExcitType == 'KInel'):
             KMatoI                    = KInelMat
         elif (InputData.ExcitType == 'KExch'):
-            KMatoI                    = KExchMatList[0]
+            KMatoI                    = KExchMatList[InputData.HomoExchNb]
         elif (InputData.ExcitType == 'KExcit'):
-            KMatoI                    = KInelMat + KExchMatList[0]
+            KMatoI                    = KInelMat + KExchMatList[InputData.HomoExchNb]
 
 
         ### Deciding Initial Levels LIst        
@@ -110,6 +109,8 @@ def generate_trainingdata(InputData):
             if (InputData.ExoEndoFlg):
                 jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] <= DiatData[0]['EInt'].to_numpy()[iIdx])]
                 jIdxVecNo         = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1]['EInt'].to_numpy()[jIdx] >  DiatData[0]['EInt'].to_numpy()[iIdx])]
+            elif (InputData.HeteroExch):
+                jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x)]
             else:
                 jIdxVec           = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >= DiatData[0][Str].to_numpy()[iIdx])]
                 jIdxVecNo         = [jIdx for jIdx, x in enumerate(KMatoI[iIdx,:] > MinValueTrain) if (x and DiatData[1][Str].to_numpy()[jIdx]    >  DiatData[0][Str].to_numpy()[iIdx])]
@@ -143,7 +144,7 @@ def generate_trainingdata(InputData):
             jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
 
 
-            if (ReconstructExothFlg):
+            if (InputData.ReconstructExothFlg):
     
                 jNLevels              = len(jIdxVecNo)
                 kIdxVec               = jIdxVecNo
@@ -258,13 +259,13 @@ def generate_trainingdata(InputData):
     for iT in range(NTTran):
 
         ### Reading Rates at Temperature TTranVec[iT]
-        KInelMat, KExchMatList   = read_kexcitdata(InputData, InputData.PathToHDF5File, TTranVec[iT], TTranVec[iT], 3)
+        KInelMat, KExchMatList   = read_kexcitdata(InputData, InputData.PathToHAHDF5File, TTranVec[iT], TTranVec[iT], InputData.NbProcesses)
         if (  InputData.ExcitType == 'KInel'):
             KMatoI                    = KInelMat
         elif (InputData.ExcitType == 'KExch'):
-            KMatoI                    = KExchMatList[0]
+            KMatoI                    = KExchMatList[InputData.HomoExchNb]
         elif (InputData.ExcitType == 'KExcit'):
-            KMatoI                    = KInelMat + KExchMatList[0]
+            KMatoI                    = KInelMat + KExchMatList[InputData.HomoExchNb]
 
 
         Str     = 'q_'+str(int(TTranVec[iT]))

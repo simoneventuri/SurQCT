@@ -79,17 +79,21 @@ def compute_vibenergy(eint, vqn, jqn):
 
 def compute_degeneracy(jqn, Molecule):
     if (Molecule == 'N2'):
-        # g = (2*jqn + 1)
+        #g = (2*jqn + 1)
         NLevels = len(jqn)
         g       = np.zeros(NLevels)
         for iLevel in range(NLevels):
             if (jqn[iLevel] % 2 == 0):
-                g[iLevel] = 6*(2*jqn[iLevel] + 1)
+                g[iLevel] = 1/2*(2*jqn[iLevel] + 1)
             else:
-                g[iLevel] = 3*(2*jqn[iLevel] + 1)
+                g[iLevel] = 1/2*(2*jqn[iLevel] + 1)
     elif (Molecule == 'O2'):
         g = (2*jqn + 1)
     elif (Molecule == 'NO'):
+        g = (2*jqn + 1)
+    elif (Molecule == 'CO'):
+        g = (2*jqn + 1)
+    elif (Molecule == 'CN'):
         g = (2*jqn + 1)
     else:
         print('\n\nDEGENERACY NOT IMPLEMENTED FOR THIS MOLECULE!\n\n')

@@ -23,7 +23,6 @@ if __name__ == "__main__":
     sys.path.insert(0, SurQCTFldr  + '/src/Plotting/')
     from Plotting import plot_losseshistory
 
-
     if (len(sys.argv) > 1):
         InputFile = sys.argv[1]
         print("[SurQCT]:   Calling SurQCT with Input File = ", InputFile)

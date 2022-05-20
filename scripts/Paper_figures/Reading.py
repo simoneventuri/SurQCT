@@ -94,17 +94,6 @@ def read_HDF5(System, PathToHDF5File, TTra, TInt):
         
     return System
 
-# Population plot times
-def find_nearest(array, value):
-    i = 0
-    iStep=[]
-    for ivalue in value:
-        array = np.asarray(array)
-        idx = (np.abs(array - ivalue)).argmin()
-        iStep.append(idx)
-        i = i+1
-    return iStep
-
 # Read populations
 def read_pops(FilePath,System,DiatData,time):
     Pop=pd.DataFrame()

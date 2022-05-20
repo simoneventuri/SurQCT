@@ -19,7 +19,9 @@ def Initialize_O3_UMN():
 
     # Plotting specifications
     System.MoleFractionXLim = [0,3e-6]
-
+    System.KDXLim=[0.5,3.0]
+    System.KDYLim=[1.e-15,1.e-9]
+    
     return System
 
 def Initialize_N3_NASA():   
@@ -39,6 +41,8 @@ def Initialize_N3_NASA():
 
     # Plotting specifications
     System.MoleFractionXLim = [0,1e-3]
+    System.KDXLim=[0.4,1.1]
+    System.KDYLim=[1.e-15,1.e-9]
     
     return System
 

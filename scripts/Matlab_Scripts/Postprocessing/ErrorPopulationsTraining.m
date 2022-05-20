@@ -29,7 +29,7 @@ function ErrorPopulationsTraining(Controls, KinQCT, KinDNN, RatesQCT, RatesDNN)
     for iMol = Controls.MoleculesOI
         fprintf(['Molecule Nb ' num2str(iMol) ', ' Syst.Molecule(iMol).Name '\n'] );
             
-    FileName = strcat(Input.Paths.ToKinMainFldrQCT,'/database/levels/Active_Sampled/O2_T',num2str(Temp.TNow),'K.csv');
+    FileName = strcat(Input.Paths.ToKinMainFldrQCT,'../Run_0D/database/levels/Active_Sampled/',Syst.Molecule.Name,'_T',num2str(Temp.TNow),'K.csv');
     opts = delimitedTextImportOptions("NumVariables", 1);
     opts.DataLines = [2, Inf];
     opts.Delimiter = ",";
@@ -40,7 +40,7 @@ function ErrorPopulationsTraining(Controls, KinQCT, KinDNN, RatesQCT, RatesDNN)
     O2SampledLevelsTable = readtable(FileName, opts);
     O2SampledLevels = table2array(O2SampledLevelsTable);
     clear opts
-    
+    O2SampledLevels
     clear LevelToBin Levelvqn LevelEeV LevelPop
     if strcmp(Syst.Molecule(iMol).KinMthdIn, 'StS')
         LevelToBin = Syst.Molecule(iMol).LevelToGroupIn;
@@ -67,12 +67,14 @@ function ErrorPopulationsTraining(Controls, KinQCT, KinDNN, RatesQCT, RatesDNN)
             fig = gcf;
             screensize   = get( groot, 'Screensize' );
             
-            scatter(LevelEeV, LevelPopQCT, 300, '.', 'MarkerEdgeColor', Syst.CFDComp(iComp).Color, 'MarkerFaceColor', Syst.CFDComp(iComp).Color, 'LineWidth', 1.5)
+            scatter(LevelEeV, LevelPopQCT, 200, '.', 'MarkerEdgeColor', Syst.CFDComp(iComp).Color, 'MarkerFaceColor', Syst.CFDComp(iComp).Color, 'LineWidth', 1.5)
             hold on
-            scatter(LevelEeV, LevelPopDNN, 300, '.', 'MarkerEdgeColor','b', 'MarkerFaceColor', 'b', 'LineWidth', 1.5)
+            scatter(LevelEeV, LevelPopDNN, 150, '.', 'MarkerEdgeColor','b', 'MarkerFaceColor', 'b', 'LineWidth', 1.5)
             hold on
-            scatter(LevelEeV(O2SampledLevels), LevelPopQCT(O2SampledLevels), 750, '.', 'MarkerEdgeColor', 'r', 'MarkerFaceColor', 'r', 'LineWidth', 1.5)
-            hold on
+%             scatter(LevelEeV(O2SampledLevels), LevelPopQCT(O2SampledLevels), 750, '.', 'MarkerEdgeColor', 'g', 'MarkerFaceColor', 'g', 'LineWidth', 1.5)
+%             hold on
+%             scatter(LevelEeV(O2SampledLevels), LevelPopDNN(O2SampledLevels), 750, '.', 'MarkerEdgeColor', 'b', 'MarkerFaceColor', 'b', 'LineWidth', 1.5)
+%             hold on
             box on
 
             xt = get(gca, 'XTick');
@@ -89,6 +91,8 @@ function ErrorPopulationsTraining(Controls, KinQCT, KinDNN, RatesQCT, RatesDNN)
             ylab             = ylabel(str_y, 'Fontsize', Param.AxisLabelSz, 'FontName', Param.AxisLabelNm);
             ylab.Interpreter = 'latex';
             set(gca, 'YScale', 'log')
+            
+            title(num2str(KinQCT.T(Temp.iT).t(iStep)))
 
             pbaspect([1 1 1])
             

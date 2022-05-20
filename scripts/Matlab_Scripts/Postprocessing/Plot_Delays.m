@@ -10,20 +10,20 @@ prev = st_set_graphics_defaults();
 DepPerc = 0.50;
 
 %T0_Vec  = [1500, 5000, 8000, 10000, 20000]; %, 12000, 15000, 20000];
-T0_Vec = [10000];
+T0_Vec = [10000 20000];
 
-Input.Inel.TestNum = '4';
-Input.Exch.TestNum = '4';
+Input.Inel.TestNum = '9';
+Input.Exch.TestNum = '6';
 Input.FNN.TestNum = '55';
-Input.Dimension = 'transfer';
-Input.System = 'N3_NASA'
+Input.Dimension = 'nondim';
+Input.System = 'O3_UMN'
 
-StSFldr1 = strcat('/home/venturi/WORKSPACE/Air_Database/Run_0D_semi/output_',Input.System,'_T');
-StSFldr2 = 'K_1_1_1_0/box.dat';
+StSFldr1 = strcat('/home/venturi/WORKSPACE/Air_Database/Run_0D/output_',Input.System,'_T');
+StSFldr2 = 'K_2_0_0_0/box.dat';
 
 surQCT1    = strcat('/home/venturi/WORKSPACE/Air_Database/Run_0D_surQCT/',Input.Dimension,'_RunI',Input.Inel.TestNum,'_E',Input.Exch.TestNum,'_D',Input.FNN.TestNum,'/output_',Input.System,'_T');
-%surQCT1 = '/home/venturi/WORKSPACE/Air_Database/Run_0D/output_O3_UMN_T';
-surQCT2    = 'K_1_100_100_0/box.dat';
+% surQCT1 = '/home/venturi/WORKSPACE/Air_Database/Run_0D/output_O3_UMN_T';
+surQCT2    = 'K_2_0_0_0/box.dat';
 
 % StSFldr1 = '/home/venturi/WORKSPACE/Air_Database/Run_0D_semi/output_N3_NASA_T';
 % StSFldr2 = 'K_1_1_1_0/box.dat';

@@ -45,13 +45,13 @@ if(Input.DNN.nondim)
     Input.DNN.nondimfldr='transfer_';
 end
 
-Input.Inel.TestNum = '4';
-Input.Exch.TestNum = '4';
+Input.Inel.TestNum = '80';
+Input.Exch.TestNum = '0';
 Input.Diss.TestNum = '55';
 Input.Paths.ToKinMainFldrDNN    = strcat(Input.WORKSPACE_PATH, '/Air_Database/Run_0D_surQCT/');
 Input.Kin.RateSourceDNN        = 'PLATO'; % CoarseAIR / CG-QCT / HDF5 / PLATO
 
-Input.TranVec                   = [10000];%[1500, 2500, 5000, 6000, 8000, 10000, 12000, 14000, 15000, 20000];
+Input.TranVec                   = [20000];%[1500, 2500, 5000, 6000, 8000, 10000, 12000, 14000, 15000, 20000];
 Input.SystNameLong              = 'N3_NASA'; 
 Input.iPES                      = 0;
 Input.Suffix                    = ''
@@ -71,14 +71,14 @@ Input.Kin.ParamsGroupsOut       = [    1.0];
 Input.Kin.NGroupsOut            = [     61];
 Input.Kin.PathToWriteMappingOut = [{'/home/venturi/WORKSPACE/Air_Database/Run_0D/database/grouping/'}];
 
-Input.Kin.Proc.DissFlg          = 1;
+Input.Kin.Proc.DissFlg          = 0;
 Input.Kin.NBinsSuffix           = 0;
 Input.Kin.DissCorrFactor        = 1;
 Input.Kin.Proc.DissInelFlg      = 0;
 Input.Kin.Proc.InelFlg          = 1;
-Input.Kin.Proc.DNNInelFlg       = 100;
-Input.Kin.Proc.ExchFlg1         = 1;
-Input.Kin.Proc.DNNExchFlg1      = 100;
+Input.Kin.Proc.DNNInelFlg       = 1;
+Input.Kin.Proc.ExchFlg1         = 0;
+Input.Kin.Proc.DNNExchFlg1      = 0;
 Input.Kin.Proc.ExchFlg2         = 0;
 
 Input.Kin.ReadRatesProc         = [0,0,0]%[2, 2, 2]
@@ -162,7 +162,7 @@ Input.Tasks.Plot_VDF.tSteps                            = [1.e-14, 1e-12, 1e-10, 
 % Plotting RVS Populations
 Input.Tasks.Plot_Populations.Flg                       = true;
 Input.Tasks.Plot_Populations.MoleculesOI               = [1];
-Input.Tasks.Plot_Populations.tSteps                    = [1e-8, 1e-7] %[1.e-13, 1e-12, 1.e-11, 1e-10, 1e-9, 1e-8]%[8.94e-7]%[7.e-6, 30e-6, 100e-6, 5.e-3];
+Input.Tasks.Plot_Populations.tSteps                    = [1e-8, 1e-7, 1e-6] %[1.e-13, 1e-12, 1.e-11, 1e-10, 1e-9, 1e-8]%[8.94e-7]%[7.e-6, 30e-6, 100e-6, 5.e-3];
 Input.Tasks.Plot_Populations.PercEnergy                = [0.25,0.50,0.75];
 Input.Tasks.Plot_Populations.GroupColors               = 0;
 Input.Tasks.Plot_Populations.ColorIdx                  = 1;
@@ -187,12 +187,12 @@ Input.Kin.ReadRatesProc         = [2, 2, 2, 0]
 %% NN Errors
 Input.Tasks.ErrorMolFracs = false;
 Input.Tasks.ErrorPopulations = false;
-Input.Tasks.ErrorPopulationsOverg = true;
+Input.Tasks.ErrorPopulationsOverg = false;
 Input.Tasks.ErrorPopulations_PercEnergy = false;
 Input.Tasks.StateEnergy = false;
 Input.Tasks.StateKDiss = false;
 Input.Tasks.EnergyContribution = false;
-Input.Tasks.ErrorPopulationsTraining = false;
+Input.Tasks.ErrorPopulationsTraining = true;
 Input.Tasks.ErrorRates = false;
 
 %% Initializing
@@ -239,8 +239,8 @@ for iT = 1:length(Temp.TranVec)
     Input.Paths.ToKinRunFldr = strcat(Input.Paths.ToKinMainFldrQCT, '/output_', Syst.NameLong, Input.RunSuffix, '_T', Temp.TNowChar, 'K_', Input.Kin.Proc.OverallFlg);
     PathToKinRunFldrQCT = strcat(Input.Paths.ToKinMainFldrQCT,'/output_', Syst.NameLong, Input.RunSuffix, '_T', Temp.TNowChar, 'K_', Input.Kin.Proc.OverallFlg);
     PathToKinRunFldrDNN = strcat(Input.Paths.ToKinMainFldrDNN,'/', Input.DNN.nondimfldr,'RunI',Input.Inel.TestNum,'_E',Input.Exch.TestNum,'_D',Input.Diss.TestNum,'/output_', Syst.NameLong, Input.RunSuffix, '_T', Temp.TNowChar,'K_',Input.KinDNN.Proc.OverallFlg);
-%     PathToKinRunFldrQCT = PathToKinRunFldrDNN
-
+%     PathToKinRunFldrDNN = strcat(Input.WORKSPACE_PATH, '/Air_Database/Run_0D_semi/','/output_', Syst.NameLong, Input.RunSuffix, '_T', Temp.TNowChar, 'K_', Input.Kin.Proc.OverallFlg);
+    
     if Input.ReLoad > 0 
         %close all
         % Reading Quantities
@@ -308,7 +308,7 @@ for iT = 1:length(Temp.TranVec)
             Read_Pops(PathToKinRunFldrQCT,SemiIndicator)    
             QCT=Kin;
             
-            SemiIndicator = false;            
+            SemiIndicator = true;            
             % Reading Thermodynamics Variables Outputted by KONIG
             Read_KONIGBox(PathToKinRunFldrDNN)
             % Reading Level/Group Population Outputted by KONIG
@@ -367,7 +367,7 @@ for iT = 1:length(Temp.TranVec)
             % Computing Energies
             SemiIndicator = false;
             QCT = Compute_Energies(Input.Tasks.Plot_EnergyDepletions,QCT,RatesQCT,SemiIndicator);
-            SemiIndicator = false;
+            SemiIndicator = true;
             DNN = Compute_Energies(Input.Tasks.Plot_EnergyDepletions,DNN,RatesDNN,SemiIndicator);
 
         end

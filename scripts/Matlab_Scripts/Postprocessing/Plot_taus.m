@@ -11,15 +11,15 @@ global Input Syst Param
 
 iCompOI       = 2;
 Nvqn          = 45;
-Syst.NameLong = 'N2O_UMN';
-Molecule='N2';
+Syst.NameLong = 'O3_UMN';
+Molecule='O2';
 dimension='nondim'
-Input.Inel.TestNum = '9';
+Input.Inel.TestNum = '45';
 Input.Exch.TestNum = '6';
 Input.FNN.TestNum = '55';
 
 StSFldr1      = strcat('/home/venturi/WORKSPACE/SurQCT/0D/Data/',Syst.NameLong,'/',dimension,'_RunI',Input.Inel.TestNum,'_E',Input.Exch.TestNum,'_D',Input.FNN.TestNum,'/');
-StSFldr2      = strcat('_Taus_',Molecule,'_0_1_0_0.csv');
+StSFldr2      = strcat('_Taus_',Molecule,'_0_1_1_0.csv');
 
 SuffixFldr = [{'QCT'},{'DNN'}]
 

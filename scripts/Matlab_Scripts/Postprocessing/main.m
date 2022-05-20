@@ -41,14 +41,14 @@ Input.Kin.RateSourceQCT         = 'HDF5'; % CoarseAIR / CG-QCT / HDF5 / PLATO
 SemiIndicator=false;
 Input.DNN.nondim = false;
 Input.DNN.nondimfldr='nondim_';
-Input.Inel.TestNum = '15';
+Input.Inel.TestNum = '45';
 Input.Exch.TestNum = '6';
 Input.Diss.TestNum = '55';
 Input.Paths.ToKinMainFldrDNN    = strcat(Input.WORKSPACE_PATH, '/Air_Database/Run_0D_surQCT/');
 Input.Kin.RateSourceDNN        = 'PLATO'; % CoarseAIR / CG-QCT / HDF5 / PLATO
 
-%Input.TranVec                   = [1500 2500 5000 8000 10000 15000 20000];
-Input.TranVec                   = [20000];
+%Input.TranVec                   = [1500 2500 5000 8000 10000 12000 15000 20000];
+Input.TranVec                   = [1500, 5000, 10000, 20000];
 Input.SystNameLong              = 'O3_UMN';
 Input.iPES                      = 0;
 Input.Suffix                    = ''
@@ -279,12 +279,12 @@ for iT = 1:length(Temp.TranVec)
             % Reading Rates
             Read_Rates(RatesFldrI,RatesFldrD,RatesFldrE,RateSourceQCT)
             RatesQCT = Rates;
-            Read_Rates(RatesFldrI,RatesFldrD,RatesFldrE,RateSourceDNN)
+%             Read_Rates(RatesFldrI,RatesFldrD,RatesFldrE,RateSourceDNN)
             RatesDNN = Rates; 
-            RatesDNN.T(Temp.iT).Diss = 3/16.*RatesDNN.T(Temp.iT).Diss;
-            RatesDNN.T(Temp.iT).Molecule(1).Overall(:,1) = 3/16.*RatesDNN.T(Temp.iT).Molecule(1).Overall(:,1);
-            RatesDNN.T(Temp.iT).ExchType(1).Exch = RatesQCT.T(Temp.iT).ExchType(1).Exch;
-            RatesDNN.T(Temp.iT).Inel = RatesQCT.T(Temp.iT).Inel;
+%             RatesDNN.T(Temp.iT).Diss = 3/16.*RatesDNN.T(Temp.iT).Diss;
+%             RatesDNN.T(Temp.iT).Molecule(1).Overall(:,1) = 3/16.*RatesDNN.T(Temp.iT).Molecule(1).Overall(:,1);
+%             RatesDNN.T(Temp.iT).ExchType(1).Exch = RatesQCT.T(Temp.iT).ExchType(1).Exch;
+%             RatesDNN.T(Temp.iT).Inel = RatesQCT.T(Temp.iT).Inel;
         end
         
         if (Input.Tasks.Plot_MoleFracs.Flg                 || ...

@@ -5,13 +5,14 @@ def compute_energy(System,Pop,DiatData,Run):
     eRot=np.zeros(Run.NSteps)
     eVib=np.zeros(Run.NSteps)
 
-    for iMol in range(len(System.Molecule)):
-        for iStep in range(0,Run.NSteps):
-            Ni = Pop[iStep,:]
-            NiTot = np.sum(Ni)   
-            eRot[iStep] = sum( DiatData[iMol]['ERot']*Ni ) / NiTot
-            eVib[iStep] = sum( DiatData[iMol]['EVibv0Ref']*Ni ) / NiTot
-    
+    #    for iMol in range(len(System.Molecule)):
+    iMol = 0
+    for iStep in range(0,Run.NSteps):
+        Ni = Pop[iStep,:]
+        NiTot = np.sum(Ni)   
+        eRot[iStep] = sum( DiatData[iMol]['ERot']*Ni ) / NiTot
+        eVib[iStep] = sum( DiatData[iMol]['EVibv0Ref']*Ni ) / NiTot
+        
     return eRot, eVib
 
 def compute_GlobalRates(Pop,KDiss,Mol,time):

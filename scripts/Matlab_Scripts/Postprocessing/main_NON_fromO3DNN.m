@@ -43,12 +43,12 @@ SemiIndicator=false;
 Input.DNN.nondim = true;
 Input.DNN.nondimfldr='';
 Input.Inel.TestNum = '9';
-Input.Exch.TestNum = '7';
+Input.Exch.TestNum = '6';
 Input.Diss.TestNum = '55';
 Input.Paths.ToKinMainFldrDNN    = strcat(Input.WORKSPACE_PATH, '/Air_Database/Run_0D_surQCT/');
 Input.Kin.RateSourceDNN        = 'PLATO'; % CoarseAIR / CG-QCT / HDF5 / PLATO
 
-Input.TranVec                   = [10000,20000];%[1500, 2500, 5000, 6000, 8000, 10000, 12000, 14000, 15000, 20000];
+Input.TranVec                   = [10000, 20000];%[1500, 2500, 5000, 6000, 8000, 10000, 12000, 14000, 15000, 20000];
 Input.SystNameLong              = 'NON_UMN';
 Input.iPES                      = 0;
 Input.Suffix                    = ''
@@ -68,8 +68,8 @@ Input.Kin.ParamsGroupsOut       = [    1.0,    1.0];
 Input.Kin.NGroupsOut            = [  6739,    9093];
 Input.Kin.PathToWriteMappingOut = [{'/home/venturi/WORKSPACE/Air_Database/Run_0D/database/grouping/'}];
 
-Input.Kin.Proc.DissFlg          = 0;
-Input.Kin.Proc.InelDissFlg      = 0;
+Input.Kin.Proc.DissFlg          = 1;
+Input.Kin.Proc.InelDissFlg      = 1;
 Input.Kin.NBinsSuffix           = 0;
 Input.Kin.DissCorrFactor        = 0;
 Input.Kin.Proc.DissInelFlg      = 0;
@@ -142,12 +142,12 @@ Input.Tasks.Plot_ReconstructedRates.Flg                = false;
 
 %% KONIG and PLATO
 % Plotting Mole Fractions
-Input.Tasks.Plot_MoleFracs.Flg                         = false;
+Input.Tasks.Plot_MoleFracs.Flg                         = true;
 Input.Tasks.Plot_MoleFracs.CompStart                   = 1;
 Input.Tasks.Plot_MoleFracs.CompEnd                     = 2;
 Input.Tasks.Plot_MoleFracs.Normalize                   = 0;
 % Plotting Global Rates
-Input.Tasks.Plot_GlobalRates.Flg                       = false;
+Input.Tasks.Plot_GlobalRates.Flg                       = true;
 Input.Tasks.Plot_GlobalRates.MoleculesOI               = [1];
 % Plotting Mole Fractions and Global Rates
 Input.Tasks.Plot_MoleFracs_and_GlobalRates.Flg         = false;
@@ -277,19 +277,19 @@ for iT = 1:length(Temp.TranVec)
             % Rates folder path for Plato Rates Reading
             RatesFldrI = strcat(Input.Paths.ToKinMainFldrDNN, '/database/kinetics/', Input.DNN.nondimfldr,Syst.NameLong,'_Active_Run',Input.Inel.TestNum,'/T', Temp.TNowChar, 'K/');
             RatesFldrE = strcat(Input.Paths.ToKinMainFldrDNN, '/database/kinetics/', Input.DNN.nondimfldr,Syst.NameLong,'_Active_Run',Input.Exch.TestNum,'/T', Temp.TNowChar, 'K/');
-            %RatesFldrD = strcat(Input.Paths.ToKinMainFldrDNN, '/database/kinetics/', Syst.NameLong,'_Active_Run',Input.Diss.TestNum,'/T', Temp.TNowChar, 'K/');
-            RatesFldrD = strcat(Input.Paths.ToKinMainFldrQCT1, '/database/kinetics/',Syst.NameLong,'/T', Temp.TNowChar, 'K/');
+            RatesFldrD = strcat(Input.Paths.ToKinMainFldrDNN, '/database/kinetics/', Syst.NameLong,'_Active_Run',Input.Diss.TestNum,'/T', Temp.TNowChar, 'K/');
+            %RatesFldrD = strcat(Input.Paths.ToKinMainFldrQCT1, '/database/kinetics/',Syst.NameLong,'/T', Temp.TNowChar, 'K/');
             RateSourceQCT = Input.Kin.RateSourceQCT;
             RateSourceDNN = Input.Kin.RateSourceDNN;
             
             % Reading Rates
             Read_Rates(RatesFldrI,RatesFldrD,RatesFldrE,RateSourceQCT)
             RatesQCT = Rates;
-%             Read_Rates(RatesFldrI,RatesFldrD,RatesFldrE,RateSourceDNN)
+            Read_Rates(RatesFldrI,RatesFldrD,RatesFldrE,RateSourceDNN)
             RatesDNN = Rates; 
 %             RatesDNN.T(Temp.iT).Diss = 3/16.*RatesDNN.T(Temp.iT).Diss;
 %             RatesDNN.T(Temp.iT).Molecule(1).Overall(:,1) = 3/16.*RatesDNN.T(Temp.iT).Molecule(1).Overall(:,1);
-            %RatesDNN.T(Temp.iT).ExchType(1).Exch = RatesQCT.T(Temp.iT).ExchType(1).Exch;
+            %RatesDNN.T(Temp.iT).ExchType(2).Exch = RatesQCT.T(Temp.iT).ExchType(2).Exch;
         end
         
         if (Input.Tasks.Plot_MoleFracs.Flg                 || ...

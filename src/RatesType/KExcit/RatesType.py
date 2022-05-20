@@ -13,7 +13,10 @@ from sklearn.utils                        import shuffle
 from sklearn.model_selection              import train_test_split
 from tqdm                                 import tqdm
 from os                                   import path
-
+#from numpy.random import seed
+#seed(3)
+#import tensorflow as tf
+#tf.random.set_seed(3)
 
 #=======================================================================================================================================
 def generate_trainingdata(InputData):
@@ -29,9 +32,9 @@ def generate_trainingdata(InputData):
     print('[SurQCT]:   Reading Variables: ', xVarsVec)
 
     InputData.MultFact = 1.e+09
-    MinValueTrain      = 1.e-15 * InputData.MultFact
-    MinValueTest       = 1.e-15 * InputData.MultFact
-    NoiseSD            = 1.e-15 * InputData.MultFact
+    MinValueTrain      = InputData.MinRateValue * InputData.MultFact
+    MinValueTest       = InputData.MinRateValue * InputData.MultFact
+    NoiseSD            = InputData.MinRateValue * InputData.MultFact
 
     NMolecules         = len(InputData.PathToLevelsFile)
 
@@ -98,7 +101,6 @@ def generate_trainingdata(InputData):
             iIdxVec = read_sampledinitiallevels(InputData.PathToSampledLevels, TTranVec[iT])
         print('[SurQCT]:       Vector of Initial Levels: iIdxVec = ', iIdxVec)
         iIdxVec = iIdxVec - 1
-
         
 
         ### Loop on Initial States
@@ -138,7 +140,7 @@ def generate_trainingdata(InputData):
             jLevelsDataTemp       = jLevelsDataTemp   
             jLevelsDataTemp.index = np.arange(len(TTran))
             if (OtherVar == '_Delta'):
-                jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp) 
+                jLevelsDataTemp   = iLevelsDataTemp.subtract(jLevelsDataTemp)
             else:
                 jLevelsDataTemp   = jLevelsDataTemp
             jLevelsData           = jLevelsData.append(jLevelsDataTemp[xVarsVec_Delta])
@@ -186,7 +188,7 @@ def generate_trainingdata(InputData):
     KExcitData.index    = np.arange(len(TTranData))
 
 
-    ### Concatenating Horizzontally
+    ### Concatenating Horizontally
     iLevelsData         = pd.concat([iLevelsData, TTranData], axis=1)
     iLevelsData.columns = [(VarName + '_i') for VarName in iLevelsData.columns]
     jLevelsData         = pd.concat([jLevelsData, TTranData], axis=1)
@@ -206,8 +208,7 @@ def generate_trainingdata(InputData):
 
     TrainData = TrainData.sample(frac=(1.0-InputData.ValidPerc/100.0), random_state=3)
     ValidData = DataSet.drop(TrainData.index)
-
-
+    
     ### Adding Noise to Training and Validation
     TrainDataFinal        = TrainData.copy()
     ValidDataFinal        = ValidData.copy()
@@ -229,6 +230,38 @@ def generate_trainingdata(InputData):
     TrainDataFinal.index     = np.arange(len(TrainDataFinal))
     ValidDataFinal.index     = np.arange(len(ValidDataFinal))
 
+    yTrain = TrainDataFinal.KExcit
+    yValid = ValidDataFinal.KExcit
+    
+    yWeights                                               = np.ones_like(yTrain)
+    yWeights[yTrain > np.log(1.e-13 * InputData.MultFact)] = 3.0
+    yWeights[yTrain > np.log(1.e-12 * InputData.MultFact)] = 6.0
+    yWeights[yTrain > np.log(1.e-11 * InputData.MultFact)] = 9.0
+    yWeights[yTrain > np.log(1.e-10 * InputData.MultFact)] = 12.0
+    yWeights[yTrain > np.log(1.e-9  * InputData.MultFact)] = 15.0
+
+    yWeightsvalid                                               = np.ones_like(yValid)
+    yWeightsvalid[yValid > np.log(1.e-13 * InputData.MultFact)] = 3.0
+    yWeightsvalid[yValid > np.log(1.e-12 * InputData.MultFact)] = 6.0
+    yWeightsvalid[yValid > np.log(1.e-11 * InputData.MultFact)] = 9.0
+    yWeightsvalid[yValid > np.log(1.e-10 * InputData.MultFact)] = 12.0
+    yWeightsvalid[yValid > np.log(1.e-9  * InputData.MultFact)] = 15.0
+
+    towritevar = ['log_EVib_i', 'log_ERot_i', 'ri_i', 'log_rorMin_i', 'TTran_i', 'log_EVib_Delta', 'log_ERot_Delta', 'ri_Delta', 'log_rorMin_Delta', 'TTran_Delta','KExcit','Idx_i','Idx_j','yWeights']
+    
+    yWeightDF = pd.DataFrame({'yWeights':yWeights})
+    yWeightDFvalid = pd.DataFrame({'yWeights':yWeightsvalid})
+
+    TrainDataToWrite        = TrainDataFinal.copy()
+    TrainDataToWrite = pd.concat([TrainDataToWrite, yWeightDF], axis=1) 
+
+    ValidDataToWrite        = ValidDataFinal.copy()
+    ValidDataToWrite = pd.concat([ValidDataToWrite, yWeightDFvalid], axis=1)
+
+
+    TrainDataToWrite[towritevar].to_csv('./Data_train.csv', index=False) 
+    ValidDataToWrite[towritevar].to_csv('./Data_valid.csv', index=False)
+
 
     ### Collecting Training and Validation
     x_train = TrainDataFinal.copy()
@@ -241,7 +274,6 @@ def generate_trainingdata(InputData):
     y_train = TrainDataFinal[['KExcit', 'TTran_i']]
     y_valid = ValidDataFinal[['KExcit', 'TTran_i']]
     y_all   = AllData[['KExcit', 'TTran_i']]
-
 
 
     #===================================================================================================================================

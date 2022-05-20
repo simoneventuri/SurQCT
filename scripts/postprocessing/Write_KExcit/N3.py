@@ -49,17 +49,23 @@ WORKSPACE_PATH      = os.environ['WORKSPACE_PATH']
 SurQCTFldr          = WORKSPACE_PATH + '/SurQCT/surqct/'
 
 RatesType           = 'KExcit'
+Dimension           = 'nondim_N3'
+#Dimension           = 'transfer'
+LevelFileType       = 'bottom'
 
 ExcitType           = 'KInel'
 NNRunIdx            = 8
 #ExcitType           = 'KExch'
-#NNRunIdx            = 15
+#NNRunIdx            = 2
 
-#PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/'
-PathToRunFld        = SurQCTFldr + '/../' + RatesType + '_N3_TransLearn/all_temperatures_nondim/' + ExcitType + '/'
+if(Dimension == 'nondim'):
+    PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/'
+elif (Dimension == 'nondim_N3'):
+    PathToRunFld        = SurQCTFldr + '/../' + RatesType + '_N3_QCTLearn/all_temperatures_nondim/' + ExcitType + '/'
+else:
+    PathToRunFld        = SurQCTFldr + '/../' + RatesType + '_N3_TransLearn/all_temperatures_nondim/' + ExcitType + '/'
 
-#TTranVec            = [5000.0, 10000.0, 15000.0, 20000.0]
-TTranVec            = [10000.0]
+TTranVec            = [8750,12500.0]
 
 Molecules           = ['N2','N2']
 Atoms               = ['N','N']
@@ -93,42 +99,48 @@ InputData.PathToFigFld    = InputData.PathToRunFld+'/'+InputData.PathToFigFld
 InputData.PathToParamsFld = InputData.PathToRunFld+'/'+InputData.PathToParamsFld
 InputData.PathToDataFld   = InputData.PathToRunFld+'/Data/'                                                               
 InputData.PathToParamsFld = InputData.PathToRunFld+'/Params/' 
-InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/transfer_'+System+'_Active_Run'+str(ZeroDRunIdx)+'/'
+InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQCT/database/kinetics/'+Dimension+'_'+System+'_Active_Run'+str(ZeroDRunIdx)+'/'
 
-# Bottom Ref
-#InputData.PathToLevelsFile = [WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_log_nd.csv',
-#                              WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_log_nd.csv']
-#InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
-#InputData.Molecules       = ['N2','N2'] 
-#InputData.PathToDiatFile  = [WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp',
-#                             WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp']   
+if(Dimension=='nondim'):
+    InputData.DefineModelIntFlg = 0
+    InputData.TrainIntFlg       = 0
+    InputData.Molecules       = ['N2','N2'] 
+    InputData.PathToDiatFile  = [WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp',
+                                 WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp']   
+    InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database_semiClassicalApprox/N3_NASA.hdf5'
 
-# Ground State Ref
-#InputData.PathToLevelsFile = [WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_GroundState_log_nd.csv',
-#                              WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_GroundState_log_nd.csv']
-#InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
-#InputData.Molecules       = ['N2','N2'] 
-#InputData.PathToDiatFile  = [WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp',
-#                             WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp']   
+    if(LevelFileType == 'bottom'):
+        # Bottom Ref
+        InputData.PathToLevelsFile = [WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_log_nd.csv',
+                                      WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_log_nd.csv']
 
-## we normalized
-#InputData.PathToLevelsFile = [WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_Bottom_Vib_we_nd.csv',
-#                              WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_Bottom_Vib_we_nd.csv']
-#InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
-#InputData.Molecules       = ['N2','N2'] 
-#InputData.PathToDiatFile  = [WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp',
-#                             WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/N2/LeRoy/MyLeroy_FromRobyn.inp']   
+    elif(LevelFileType == 'ground'):
+        # Ground State Ref
+        InputData.PathToLevelsFile = [WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_GroundState_log_nd.csv',
+                                      WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_GroundState_log_nd.csv']
+        InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/N3_NASA.hdf5'
+    elif(LevelFileType == 'we_normalized'):
+        # we normalized
+        InputData.PathToLevelsFile = [WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_Bottom_Vib_we_nd.csv',
+                                      WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/N2_LeRoy_Bottom_Vib_we_nd.csv']
 
+    else:
+        print('Error: Levels File type not found!')
+
+elif(Dimension == 'nondim_N3'):
+    InputData.DefineModelIntFlg = 0
+    InputData.TrainIntFlg       = 0
+    
+elif(Dimension == 'transfer'):
+    InputData.DefineModelIntFlg = 1
+    InputData.TrainIntFlg       = 0
+    
 #===================================================================================================================================
 print("\n[SurQCT]: Loading Final Modules ... ")
 
 sys.path.insert(0, SurQCTFldr  + '/src/Model/' + InputData.ApproxModel + '/')
-from Model import model
+from Model_old import model
 
-
-InputData.DefineModelIntFlg = 1
-InputData.TrainIntFlg       = 0
-InputData.TransferFlg       = True
 NN_KExcit                    = model(InputData, InputData.PathToRunFld, None, None)
 NN_KExcit.load_params(InputData.PathToParamsFld)
 
@@ -168,11 +180,8 @@ try:
 except OSError as e:
     pass
 
-iLevelsToWrite = [355]
-
 for TTran in TTranVec:
     print('[SurQCT]:    TTran = ', TTran)
-
 
     ### Opening Files
     PathToKineticFldr = InputData.KineticFldr + '/T' + str(int(TTran)) + 'K'

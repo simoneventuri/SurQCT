@@ -45,13 +45,13 @@ if(Input.DNN.nondim)
     Input.DNN.nondimfldr='nondim_';
 end
 
-Input.Inel.TestNum = '9';
+Input.Inel.TestNum = '29';
 Input.Exch.TestNum = '6';
 Input.Diss.TestNum = '55';
 Input.Paths.ToKinMainFldrDNN    = strcat(Input.WORKSPACE_PATH, '/Air_Database/Run_0D_surQCT/');
 Input.Kin.RateSourceDNN        = 'PLATO'; % CoarseAIR / CG-QCT / HDF5 / PLATO
 
-Input.TranVec                   = [15000];%[1500, 2500, 5000, 6000, 8000, 10000, 12000, 14000, 15000, 20000];
+Input.TranVec                   = [12500];%[1500, 2500, 5000, 6000, 8000, 10000, 12000, 14000, 15000, 20000];
 Input.SystNameLong              = 'N3_NASA'; 
 Input.iPES                      = 0;
 Input.Suffix                    = ''
@@ -71,7 +71,7 @@ Input.Kin.ParamsGroupsOut       = [    1.0];
 Input.Kin.NGroupsOut            = [     61];
 Input.Kin.PathToWriteMappingOut = [{'/home/venturi/WORKSPACE/Air_Database/Run_0D/database/grouping/'}];
 
-Input.Kin.Proc.DissFlg          = 0;
+Input.Kin.Proc.DissFlg          = 1;
 Input.Kin.NBinsSuffix           = 0;
 Input.Kin.DissCorrFactor        = 1;
 Input.Kin.Proc.DissInelFlg      = 0;
@@ -172,7 +172,7 @@ Input.Tasks.Plot_PopulationsVqnSpecific.MoleculesOI    = [1];
 Input.Tasks.Plot_PopulationsVqnSpecific.tSteps         = [1.e-14, 1.e-13, 1e-12, 1.e-11, 1e-10, 1.e-9, 1e-8, 1e-7, 1e-6, 1e-5]%[1e-10, 1e-8] %[8.94e-7]%[7.e-6, 30e-6, 100e-6, 5.e-3];
 Input.Tasks.Plot_PopulationsVqnSpecific.GroupColors    = 2;
 % Plotting Energies
-Input.Tasks.Plot_Energies.Flg                          = true;
+Input.Tasks.Plot_Energies.Flg                          = false;
 Input.Tasks.Plot_Energies.MoleculesOI                  = [1];
 Input.Tasks.Plot_Energies.LTFlag                       = false;
 % Plotting Energy Depletions

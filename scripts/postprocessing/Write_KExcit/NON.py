@@ -50,16 +50,16 @@ SurQCTFldr          = WORKSPACE_PATH + '/SurQCT/surqct/'
 
 RatesType           = 'KExcit'
 
-#ExcitType           = 'KInel'
-#NNRunIdx            = 15
-ExcitType           = 'KExch'
-NNRunIdx            = 7
+ExcitType           = 'KInel'
+NNRunIdx            = 9
+#ExcitType           = 'KExch'
+#NNRunIdx            = 6
 ExchType            = 'Homogenous'
 
 PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/' 
 
-TTranVec            = [10000.0, 20000.0]
-#TTranVec            = [5000.0]
+#TTranVec            = [10000.0, 20000.0]
+TTranVec            = [15000.0]
 
 Molecules           = ['NO','NO']
 Atoms               = ['N','N']
@@ -97,12 +97,12 @@ InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQC
 
 
 ### Bottom Ref
-#InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/NON_UMN.hdf5'
-#InputData.Molecules       = ['NO','NO'] 
-#InputData.PathToLevelsFile= [InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_log_nd.csv',
-#                             InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_log_nd.csv']
-#InputData.PathToDiatFile  = [InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp',
-#                             InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp'] 
+InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/NON_UMN.hdf5'
+InputData.Molecules       = ['NO','NO'] 
+InputData.PathToLevelsFile= [InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_log_nd.csv',
+                             InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_log_nd.csv']
+InputData.PathToDiatFile  = [InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp',
+                             InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp'] 
 
 ## Ground State Ref
 #InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/NON_UMN.hdf5'
@@ -121,12 +121,12 @@ InputData.KineticFldr     = InputData.WORKSPACE_PATH+'/Air_Database/Run_0D_surQC
 #                             InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp'] 
 
 ## NO Diss Ref
-InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/NON_UMN.hdf5'
-InputData.Molecules       = ['NO','NO'] 
-InputData.PathToLevelsFile= [InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_Diss_log_nd.csv',
-                             InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_Diss_log_nd.csv']
-InputData.PathToDiatFile  = [InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp',
-                             InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp'] 
+#InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/NON_UMN.hdf5'
+#InputData.Molecules       = ['NO','NO'] 
+#InputData.PathToLevelsFile= [InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_Diss_log_nd.csv',
+#                             InputData.WORKSPACE_PATH + '/Air_Database/Run_0D/database/levels/NO_UMN_Diss_log_nd.csv']
+#InputData.PathToDiatFile  = [InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp',
+#                             InputData.WORKSPACE_PATH + '/CoarseAIR/coarseair/dtb/Molecules/NO/UMN/Recomputed.inp'] 
 
 ## Heterogenous Exch
 #InputData.PathToHDF5File  = InputData.WORKSPACE_PATH  + '/Air_Database/HDF5_Database/NON_UMN.hdf5'

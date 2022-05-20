@@ -55,14 +55,14 @@ SurQCTFldr          = WORKSPACE_PATH + '/SurQCT/surqct/'
 RatesType           = 'KExcit'
 
 ExcitType           = 'KInel'
-NNRunIdx            = 23
+NNRunIdx            = 48
 #ExcitType           = 'KExch'
 #NNRunIdx            = 15
 
 PathToRunFld        = SurQCTFldr + '/../' + RatesType + '/all_temperatures_nondim/' + ExcitType + '/' 
 
-TTranVec            = [1500.0, 2500.0, 5000.0, 8000.0, 10000.0, 12000.0, 15000.0, 20000.0]
-#TTranVec            = [10000.0]
+#TTranVec            = [1500.0, 2500.0, 5000.0, 8000.0, 10000.0, 12000.0, 15000.0, 20000.0]
+TTranVec            = [1500.0, 5000.0, 10000.0, 20000.0]
 
 Molecules           = ['O2','O2']
 Atoms               = ['O','O']
@@ -133,7 +133,7 @@ xVarsVec_Delta     = InputData.xVarsVec_Delta
 xVarsVec           = list(set(xVarsVec_i) | set(xVarsVec_Delta))
 print('[SurQCT]:   Reading Variables: ', xVarsVec)
 
-InputData.MultFact = 1.e+09
+InputData.MultFact = 1.e+9
 
 NMolecules         = len(InputData.PathToLevelsFile)
 

@@ -2,8 +2,9 @@ import time
 import os
 import shutil
 import sys
-import tensorflow                             as tf
-import numpy                                  as np
+import tensorflow as tf
+import numpy  as np
+import pandas as pd
 from tensorflow                           import keras
 from tensorflow                           import train
 from tensorflow.keras                     import layers
@@ -15,7 +16,12 @@ from tensorflow.keras                     import losses
 from tensorflow.keras                     import callbacks
 from tensorflow.python.ops                import array_ops
 from sklearn.model_selection              import train_test_split
+from keras import backend as K
 
+#from numpy.random import seed
+#seed(3)
+#import tensorflow as tf
+#tf.random.set_seed(3)
 
 # from Plotting import plot_var
 # from Reading  import read_parameters_hdf5
@@ -83,13 +89,22 @@ class L1L2Regularizer(tf.keras.regularizers.Regularizer):
     return {'l1l2': float(self.l2)}
 #=======================================================================================================================================
 
+def MicroReversibilityLoss(y_true,y_pred):
 
+    loss = np.exp(y_true)*1.e-09 - np.exp(y_pred)*1.e-09* DiatData[1][Str].to_numpy()[iIdx] / DiatData[0][Str].to_numpy()[jIdxVecNo]
+
+    return loss
 
 #=======================================================================================================================================
 def NNBranch(InputData, normalized, NNName, Idx, NN_Transfer_Model):
 
     kW1      = InputData.WeightDecay[0]
     kW2      = InputData.WeightDecay[1]
+
+    if (InputData.TransferFlg and not(InputData.TransferTrunk)):
+        kW1_T    = InputData.WeightDecay[2]
+        kW2_T    = InputData.WeightDecay[3]
+        
     NNLayers = InputData.NNLayers[Idx]
     NLayers  = len(NNLayers)
     ActFun   = InputData.ActFun[Idx]
@@ -100,7 +115,21 @@ def NNBranch(InputData, normalized, NNName, Idx, NN_Transfer_Model):
         WeightsName = NNName + '_HL' + str(iLayer+1) 
         LayerName   = WeightsName + Mol 
 
-        if (InputData.TransferFlg):
+        if (InputData.TransferFlg and not(InputData.TransferTrunk)):
+            if (NNName != 'Trunk'):
+                x0     = NN_Transfer_Model.get_layer(LayerName).kernel.numpy()
+                b0     = NN_Transfer_Model.get_layer(LayerName).bias.numpy()
+                WIni   = tf.keras.initializers.RandomNormal(mean=x0, stddev=1.e-10)
+                bIni   = tf.keras.initializers.RandomNormal(mean=b0, stddev=1.e-10)
+                WRegul = L1L2Regularizer(kW1, kW2, x0)
+                bRegul = L1L2Regularizer(kW1, kW2, b0)
+            else:
+                WIni   = 'glorot_normal'
+                bIni   = 'zeros'
+                WRegul = regularizers.l1_l2(l1=kW1_T, l2=kW2_T)
+                bRegul = regularizers.l1_l2(l1=kW1_T, l2=kW2_T)
+
+        elif (InputData.TransferFlg and InputData.TransferTrunk):
             x0     = NN_Transfer_Model.get_layer(LayerName).kernel.numpy()
             b0     = NN_Transfer_Model.get_layer(LayerName).bias.numpy()
             WIni   = tf.keras.initializers.RandomNormal(mean=x0, stddev=1.e-10)
@@ -114,10 +143,7 @@ def NNBranch(InputData, normalized, NNName, Idx, NN_Transfer_Model):
             WIni   = 'glorot_normal'
             bIni   = 'zeros'
             WRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
-            # if (NNName != 'Trunk'):
             bRegul = regularizers.l1_l2(l1=kW1, l2=kW2)
-            # else:
-            #     bRegul = None
 
         hiddenVec.append(layers.Dense(units            = NNLayers[iLayer],
                                     activation         = ActFun[iLayer],
@@ -167,9 +193,8 @@ class model:
 
     # Class Initialization
     def __init__(self, InputData, PathToRunFld, TrainData, ValidData):
-
     
-        #===================================================================================================================================
+        #===============================================================================================================================
         class AdditiveGaussNoise(layers.Layer):
           def __init__(self, mean, stddev):
             super(AdditiveGaussNoise, self).__init__()
@@ -182,11 +207,10 @@ class model:
           def call(self, input):
             return input + tf.random.normal(shape=array_ops.shape(input), mean=self.mean, stddev=self.stddev)
 
-        #===================================================================================================================================
+        #===============================================================================================================================
 
 
-
-        #-------------------------------------------------------------------------------------------------------------------------------        
+        #-------------------------------------------------------------------------------------------------------------------------------     
         VarsVec_i         = InputData.xVarsVec_i + ['TTran']
         ChooseVarsI       = [(VarName + '_i') for VarName in VarsVec_i]
         VarsVec_Delta     = InputData.xVarsVec_Delta + ['TTran']
@@ -228,28 +252,41 @@ class model:
 
             ### Normalizer Layers
             if (InputData.NormalizeInput):
-                if (InputData.TransferFlg): 
-                    Mean             = NN_Transfer_Model.get_layer('normalization').mean.numpy()
-                    Variance         = NN_Transfer_Model.get_layer('normalization').variance.numpy()
-                    normalizerI      = preprocessing.Normalization(mean=Mean, variance=Variance)
-                else:
+                if (InputData.TransferFlg and InputData.Renormalize): 
                     normalizerI      = preprocessing.Normalization()
                     self.xTrainI         = self.xTrain[ChooseVarsI]
                     normalizerI.adapt(np.array(self.xTrainI))
+                elif (InputData.TransferFlg and not(InputData.Renormalize)): 
+                    Mean             = NN_Transfer_Model.get_layer('normalization').mean.numpy()
+                    Variance         = NN_Transfer_Model.get_layer('normalization').variance.numpy()
+                    print(Mean)
+                    print(Variance)
+                    normalizerI      = preprocessing.Normalization(mean=Mean, variance=Variance)
+                else:
+                    normalizerI      = preprocessing.Normalization()
+                    self.xTrainI     = self.xTrain[ChooseVarsI]
+                    normalizerI.adapt(np.array(self.xTrainI))             # adapt to learn the mean and variance from input data
                 InputI               = normalizerI(inputI)
                 #
-                if (InputData.TransferFlg): 
+                if (InputData.TransferFlg and InputData.Renormalize): 
+                    normalizerDeltaI = preprocessing.Normalization()
+                    self.xTrainDataI     = self.xTrain[ChooseVarsData]
+                    normalizerDeltaI.adapt(np.array(self.xTrainDataI))
+                elif (InputData.TransferFlg and not(InputData.Renormalize)): 
                     Mean             = NN_Transfer_Model.get_layer('normalization_1').mean.numpy()
                     Variance         = NN_Transfer_Model.get_layer('normalization_1').variance.numpy()
+                    print(Mean)
+                    print(Variance)                    
                     normalizerDeltaI = preprocessing.Normalization(mean=Mean, variance=Variance)
                 else:
                     normalizerDeltaI = preprocessing.Normalization()
-                    self.xTrainDataI     = self.xTrain[ChooseVarsData]
+                    self.xTrainDataI = self.xTrain[ChooseVarsData]
                     normalizerDeltaI.adapt(np.array(self.xTrainDataI))
                 InputDeltaI          = normalizerDeltaI(inputDeltaI)
             else:
                 InputI               = inputI
                 InputDeltaI          = inputDeltaI
+
 
             ### NN Branches
             outputI        = NNBranch(InputData, InputI,      'Branch', 0, NN_Transfer_Model)
@@ -292,10 +329,9 @@ class model:
             #---------------------------------------------------------------------------------------------------------------------------
 
             #---------------------------------------------------------------------------------------------------------------------------
-            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=200000, decay_rate=0.98, staircase=True)
-            #LearningRate = InputData.LearningRate
-
+            LearningRate = optimizers.schedules.ExponentialDecay(InputData.LearningRate, decay_steps=InputData.LRDecaySteps, decay_rate=0.98, staircase=True)            #LearningRate = InputData.LearningRate
             MTD = InputData.Optimizer
+
             if (MTD == 'adadelta'):  # A SGD method based on adaptive learning rate
                 opt = optimizers.Adadelta(learning_rate=LearningRate, rho=0.95, epsilon=InputData.epsilon, name='Adadelta')
             elif (MTD == 'adagrad'):
@@ -399,15 +435,16 @@ class model:
 
         _start_time      = get_start_time()
         TBCheckpointFldr = InputData.TBCheckpointFldr + "/" + InputData.ExcitType +"/Run" + str(InputData.NNRunIdx) + "_{}".format(get_start_time())
-
         ESCallBack    = callbacks.EarlyStopping(monitor='val_loss', min_delta=InputData.ImpThold, patience=InputData.NPatience, restore_best_weights=True, mode='auto', baseline=None, verbose=1)
         MCFile        = InputData.PathToParamsFld + "/ModelCheckpoint/cp-{epoch:04d}.ckpt"
         MCCallBack    = callbacks.ModelCheckpoint(filepath=MCFile, monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=0, mode='auto', save_freq='epoch', options=None)
         LRCallBack    = customReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=200, mode='auto', min_delta=1.e-4, cooldown=0, min_lr=1.e-8, verbose=1)
         TBCallBack    = callbacks.TensorBoard(log_dir=TBCheckpointFldr, histogram_freq=0, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None)
-        
-        CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]
-#        CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
+
+        if(InputData.ESFlg):
+            CallBacksList = [ESCallBack, MCCallBack, LRCallBack, TBCallBack]
+        else:
+            CallBacksList = [TBCallBack, MCCallBack, LRCallBack]
 
         #History       = self.Model.fit(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], batch_size=InputData.MiniBatchSize, validation_split=InputData.ValidPerc/100.0, verbose=1, epochs=InputData.NEpoch, callbacks=CallBacksList)
         # xTrain, xValid, yTrain, yValid = train_test_split(self.xTrain[self.xTrainingVar], self.yTrain[self.yTrainingVar], test_size=InputData.ValidPerc/100.0) #stratify=self.yTrain[self.yTrainingVar],
@@ -428,13 +465,24 @@ class model:
         yWeights[yTrain > np.log(1.e-9  * InputData.MultFact)] = 15.0
         print('[SurQCT]:   Here Some of the Label Weights ... ', yWeights)
 
-        History       = self.Model.fit(self.xTrain[self.xTrainingVar], yTrain, 
-                                       sample_weight=yWeights,
-                                       batch_size=InputData.MiniBatchSize, 
-                                       validation_data=(self.xValid[self.xTrainingVar], yValid), 
-                                       verbose=1, 
-                                       epochs=InputData.NEpoch, 
-                                       callbacks=CallBacksList)
+        yWeightDF = pd.DataFrame({'yWeights':yWeights})
+        yWeightDF.to_csv('./Data_train_weights.csv',index=False,header=True)
+        
+        if(not InputData.LossWeighting):
+            History       = self.Model.fit(self.xTrain[self.xTrainingVar], yTrain, 
+        	                           batch_size=InputData.MiniBatchSize, 
+        	                           validation_data=(self.xValid[self.xTrainingVar], yValid), 
+        	                           verbose=1, 
+        	                           epochs=InputData.NEpoch, 
+        	                           callbacks=CallBacksList)
+        else:
+            History       = self.Model.fit(self.xTrain[self.xTrainingVar], yTrain, 
+                                           sample_weight=yWeights,
+                                           batch_size=InputData.MiniBatchSize, 
+                                           validation_data=(self.xValid[self.xTrainingVar], yValid), 
+                                           verbose=1, 
+                                           epochs=InputData.NEpoch, 
+                                           callbacks=CallBacksList)
 
         ModelFile = InputData.PathToRunFld + '/MyModel/MyWeights.h5'
         self.Model.save_weights(ModelFile)
